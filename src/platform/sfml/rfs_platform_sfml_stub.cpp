@@ -1,0 +1,1 @@
+namespace rfs { void sfml_platform_stub() {} }
