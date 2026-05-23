@@ -2,7 +2,9 @@
 #include "../app/IGameState.h"
 
 namespace rfs {
-	void MainMenuState::Update(const FrameContext& ctx) {
+	MainMenuState::MainMenuState(IRenderer& renderer) : renderer_(renderer){}
+
+	void MainMenuState::Update([[maybe_unused]] const FrameContext& ctx) {
 	}
 
 	void MainMenuState::Render() {

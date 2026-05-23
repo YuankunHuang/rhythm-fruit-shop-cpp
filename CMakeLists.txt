@@ -11,13 +11,17 @@ target_link_libraries(rfs_core PRIVATE rfs_warnings)
 
 # rfs_platform_iface: platform interface library, depends on rfs_core.
 add_library(rfs_platform_iface INTERFACE)
+target_include_directories(rfs_platform_iface INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/platform)
 target_link_libraries(rfs_platform_iface INTERFACE rfs_core)
 
 # rfs_platform_sfml, depends on rfs_platform_iface.
 find_package(SFML 2.6 COMPONENTS system window graphics REQUIRED)
 add_library(rfs_platform_sfml STATIC
-	"src/platform/rfs_platform_sfml_stub.cpp"
+	"src/platform/sfml/SfmlWindow.cpp"
+	"src/platform/sfml/SfmlRenderer.cpp"
+	"src/platform/sfml/SfmlInputSource.cpp"
 )
+target_include_directories(rfs_platform_sfml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rfs_platform_sfml
 	PUBLIC rfs_platform_iface
 	PRIVATE sfml-graphics sfml-window sfml-system rfs_warnings
@@ -26,7 +30,7 @@ target_link_libraries(rfs_platform_sfml
 # rfs_platform_miniaudio, depends on rfs_platform_iface.
 add_library(rfs_platform_miniaudio STATIC
 	"src/platform/miniaudio/rfs_platform_miniaudio.cpp"
-)
+ )
 target_include_directories(rfs_platform_miniaudio
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio
 )
@@ -35,13 +39,13 @@ target_link_libraries(rfs_platform_miniaudio
 	PRIVATE rfs_warnings
 )
 
-# rfs_app: main application target, depends on rfs_core and one platform implementation.
+# rfs_app: main application target, depends on platform interface
 add_library(rfs_app STATIC
 	src/rfs_app.cpp
 	src/app/Application.cpp
 	src/app/StateStack.cpp
 	src/game/MainMenuState.cpp
-)
+ )
 target_include_directories(rfs_app
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -53,8 +57,7 @@ target_link_libraries(rfs_app
 # rfs_demo: executable target for the main application.
 add_executable(rfs_demo 
 	src/main.cpp
-	"src/platform/rfs_platform_sfml.cpp"
-)
+ )
 target_link_libraries(rfs_demo PRIVATE
     rfs_app
     rfs_platform_miniaudio
@@ -65,7 +68,7 @@ target_link_libraries(rfs_demo PRIVATE
 # rfs_tests: test target, depends on rfs_core and one platform implementation.
 add_executable(rfs_tests
 	src/rfs_tests.cpp
-)
+ )
 target_link_libraries(rfs_tests
 	PRIVATE rfs_core rfs_platform_iface rfs_warnings
 )

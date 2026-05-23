@@ -9,5 +9,9 @@ namespace rfs {
 	public:
 		Application(IWindow& window, IInputSource& input, IRenderer& renderer);
 		bool Run();
+	private:
+		IWindow& window_;
+		IInputSource& input_;
+		IRenderer& renderer_;
 	};
 }

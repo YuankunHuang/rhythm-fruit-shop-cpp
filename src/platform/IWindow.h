@@ -3,8 +3,9 @@
 namespace rfs {
 	class IWindow {
 	public:
-		virtual ~IWindow() = default; // destructor -> Big Five Rule :D
-		virtual void Show() = 0;
-		virtual void Hide() = 0;
+		virtual ~IWindow() = default;
+		virtual bool IsOpen() const = 0;
+		virtual void PollEvents() = 0;
+		virtual void Close() = 0;
 	};
 }
