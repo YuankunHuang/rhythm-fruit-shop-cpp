@@ -1,13 +1,16 @@
 #pragma once
 
 #include "../IInputSource.h"
+#include "SfmlWindow.h"
 #include <memory>
 #include <span>
+
+inline constexpr std::size_t kMaxEventsPerFrame = 64;
 
 namespace rfs {
 	class SfmlInputSource final : public IInputSource {
 	public:
-		SfmlInputSource();
+		SfmlInputSource(SfmlWindow& window);
 		~SfmlInputSource();
 		std::span<const InputEvent> Poll(HostNanos pollEnterHostNs) noexcept override;
 

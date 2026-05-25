@@ -19,14 +19,6 @@ SfmlWindow::SfmlWindow(unsigned w, unsigned h, const char* t) : pimpl(std::make_
 bool SfmlWindow::IsOpen() const {
 	return pimpl->window.isOpen();
 }
-void SfmlWindow::PollEvents() {
-	sf::Event e;
-	while (pimpl->window.pollEvent(e)) {
-		if (e.type == sf::Event::Closed) {
-			pimpl->window.close();
-		}
-	}
-}
 void SfmlWindow::Close() {
 	pimpl->window.close();
 }

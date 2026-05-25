@@ -5,7 +5,6 @@ namespace rfs {
 	public:
 		virtual ~IWindow() = default;
 		virtual bool IsOpen() const = 0;
-		virtual void PollEvents() = 0;
 		virtual void Close() = 0;
 	};
 }

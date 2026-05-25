@@ -2,18 +2,22 @@
 
 #include "../app/IGameState.h"
 #include "../platform/IRenderer.h"
-#include "../app/StateStack.h"
+#include <string>
+#include <optional>
+#include "../rhythm/FrozenChart.h"
 
 namespace rfs {
-	class MainMenuState : public IGameState {
+	class LoadingState : public IGameState {
 	public:
-		explicit MainMenuState(IRenderer& renderer, StateStack& stack);
-
+		explicit LoadingState(IRenderer& renderer);
 		void Update(const FrameContext& ctx) override;
 		void Render() override;
 		void HandleInput(const InputEvent& evt) override;
 	private:
 		IRenderer& renderer_;
-		StateStack& stack_; // need this to push the next state when the player starts the game
+		bool loadOk_ = false;
+		std::string title_;
+		std::string detail_;
+		std::optional<FrozenChart> chart_;
 	};
 }

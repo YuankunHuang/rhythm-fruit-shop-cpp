@@ -3,11 +3,17 @@ project(rhythm_fruit_shop LANGUAGES CXX)
 
 include(cmake/Warnings.cmake)
 
+find_package(nlohmann_json CONFIG REQUIRED)
+
 # rfs_core: core library, no external dependencies.
 add_library(rfs_core STATIC
-	src/rfs_core_placeholder.cpp
+	src/rhythm/ChartLoader.cpp
 )
-target_link_libraries(rfs_core PRIVATE rfs_warnings)
+target_include_directories(rfs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(rfs_core 
+	PUBLIC nlohmann_json::nlohmann_json
+	PRIVATE rfs_warnings
+)
 
 # rfs_platform_iface: platform interface library, depends on rfs_core.
 add_library(rfs_platform_iface INTERFACE)
@@ -45,6 +51,7 @@ add_library(rfs_app STATIC
 	src/app/Application.cpp
 	src/app/StateStack.cpp
 	src/game/MainMenuState.cpp
+	src/game/LoadingState.cpp
  )
 target_include_directories(rfs_app
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -57,6 +64,9 @@ target_link_libraries(rfs_app
 # rfs_demo: executable target for the main application.
 add_executable(rfs_demo 
 	src/main.cpp
+ )
+ set_target_properties(rfs_demo PROPERTIES
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
  )
 target_link_libraries(rfs_demo PRIVATE
     rfs_app

@@ -7,7 +7,7 @@ int main() {
 
 	rfs::SfmlWindow window(800, 600, "Rhythm Fruit Shop");
 	rfs::SfmlRenderer renderer(window);
-	rfs::SfmlInputSource input{};
+	rfs::SfmlInputSource input(window);
 	rfs::Application app(window, input, renderer);
 
 	return app.Run() ? 0 : 1;

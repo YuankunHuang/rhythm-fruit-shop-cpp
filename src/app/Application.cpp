@@ -11,12 +11,17 @@ namespace rfs {
 	bool Application::Run() {
 		StateStack stack{};
 
-		stack.Push(std::make_unique<MainMenuState>(renderer_));
+		stack.Push(std::make_unique<MainMenuState>(renderer_, stack));
 
 		while (window_.IsOpen()) {
-			window_.PollEvents();
 			const auto poll_enter = std::chrono::steady_clock::now().time_since_epoch().count();
-			[[maybe_unused]] auto evts = input_.Poll(poll_enter);
+			auto evts = input_.Poll(poll_enter); // long long can be implicited converted to HostNanos, since they are both just aliases for std::int64_t
+			for (const auto& evt : evts) {
+				stack.Top().HandleInput(evt);
+				if (!window_.IsOpen()) {
+					break;
+				}
+			}
 
 			FrameContext ctx{};
 			auto& top_state = stack.Top();

@@ -13,7 +13,6 @@ namespace rfs {
 		~SfmlWindow();
 
 		bool IsOpen() const override;
-		void PollEvents() override;
 		void Close() override;
 		sf::RenderWindow& RenderTarget();
 

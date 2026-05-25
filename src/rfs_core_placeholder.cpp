@@ -1,1 +1,0 @@
-namespace rfs { void core_placeholder() {} }
