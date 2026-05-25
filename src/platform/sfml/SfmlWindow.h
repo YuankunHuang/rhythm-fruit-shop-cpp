@@ -12,12 +12,14 @@ namespace rfs {
 		explicit SfmlWindow(unsigned width, unsigned height, const char* title);
 		~SfmlWindow();
 
-		bool IsOpen() const override;
-		void Close() override;
+		bool  IsOpen()  const override;
+		void  Close()         override;
+		float Width()   const override;
+		float Height()  const override;
 		sf::RenderWindow& RenderTarget();
 
 	private:
-		struct Impl; // use pimple pattern, to avoid leaking SFML in header
-		std::unique_ptr<Impl> pimpl;
+		struct Impl; // use implementation pointer (pimpl) pattern, to avoid leaking SFML in header
+		std::unique_ptr<Impl> pimpl_;
 	};
 }

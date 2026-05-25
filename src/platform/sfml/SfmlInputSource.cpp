@@ -19,7 +19,7 @@ struct SfmlInputSource::Impl {
 		count = 0; // no need to actually clear the buffer, just reset the count
 	}
 
-	void Push(InputAction action, bool pressed, HostNanos hostNs) {
+	void Push(InputAction action, bool pressed, HostNanos host_ns) {
 		if (count >= buffer.size()) {
 			return;
 		}
@@ -27,12 +27,12 @@ struct SfmlInputSource::Impl {
 		buffer[count++] = InputEvent{
 			.action = action,
 			.pressed = pressed,
-			.eventHostNs = hostNs,
+			.event_host_ns = host_ns,
 		};
 	}
 };
 
-SfmlInputSource::SfmlInputSource(SfmlWindow& window) : pimpl(std::make_unique<Impl>(window)) {}
+SfmlInputSource::SfmlInputSource(SfmlWindow& window) : pimpl_(std::make_unique<Impl>(window)) {}
 
 SfmlInputSource::~SfmlInputSource() = default;
 
@@ -51,18 +51,18 @@ static std::optional<InputAction> MapSfmlKeyToInputAction(sf::Keyboard::Key key)
 	}
 }
 
-std::span<const InputEvent> SfmlInputSource::Poll([[maybe_unused]] HostNanos ns) noexcept {
+std::span<const InputEvent> SfmlInputSource::Poll([[maybe_unused]] HostNanos poll_enter_ns) noexcept {
 
-	pimpl->Clear(); // we don't want to keep old events around, clean start
+	pimpl_->Clear(); // we don't want to keep old events around, clean start
 
-	if (!pimpl->window.IsOpen()) {
+	if (!pimpl_->window.IsOpen()) {
 		return {};
 	}
 
 	sf::Event evt{};
-	while (pimpl->window.RenderTarget().pollEvent(evt)) {
+	while (pimpl_->window.RenderTarget().pollEvent(evt)) {
 		if (evt.type == sf::Event::Closed) {
-			pimpl->window.Close();
+			pimpl_->window.Close();
 			continue;
 		}
 
@@ -70,10 +70,10 @@ std::span<const InputEvent> SfmlInputSource::Poll([[maybe_unused]] HostNanos ns)
 			const bool pressed = evt.type == sf::Event::KeyPressed;
 			const auto action = MapSfmlKeyToInputAction(evt.key.code);
 			if (action.has_value()) {
-				pimpl->Push(action.value(), pressed, ns);
+				pimpl_->Push(action.value(), pressed, poll_enter_ns);
 			}
 		}
 	}
 
-	return { pimpl->buffer.data(), pimpl->count };
+	return { pimpl_->buffer.data(), pimpl_->count };
 }

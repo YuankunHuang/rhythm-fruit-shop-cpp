@@ -12,10 +12,10 @@ namespace rfs {
 	public:
 		SfmlInputSource(SfmlWindow& window);
 		~SfmlInputSource();
-		std::span<const InputEvent> Poll(HostNanos pollEnterHostNs) noexcept override;
+		std::span<const InputEvent> Poll(HostNanos poll_enter_ns) noexcept override;
 
 	private:
 		struct Impl;
-		std::unique_ptr<Impl> pimpl;
+		std::unique_ptr<Impl> pimpl_;
 	};
 }

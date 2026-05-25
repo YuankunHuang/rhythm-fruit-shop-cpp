@@ -19,7 +19,7 @@ namespace rfs {
 		}
 
 		if (evt.action == InputAction::Restart) {
-			stack_.Push(std::make_unique<LoadingState>(renderer_));
+			stack_.Push(std::make_unique<LoadingState>(renderer_, stack_));
 		}
 	}
 }

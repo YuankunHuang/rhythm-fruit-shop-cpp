@@ -16,7 +16,7 @@ namespace rfs {
 		bool pressed = false;
 		std::uint8_t _pad0 = 0;
 		std::uint8_t _pad1 = 0;
-		HostNanos eventHostNs = 0;
-		Milliseconds eventSongTimeMs = 0;
+		HostNanos event_host_ns = 0;
+		Milliseconds event_song_time_ms = 0;
 	};
 }
