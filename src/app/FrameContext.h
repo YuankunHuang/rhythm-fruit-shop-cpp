@@ -2,6 +2,9 @@
 
 namespace rfs {
 	struct FrameContext final {
-		float deltaTime = 0.f; // time elapsed since last frame, in seconds
+		float delta_time   = 0.f;
+		float song_time_ms = 0.f;
+		float win_w        = 800.f;
+		float win_h        = 600.f;
 	};
 }

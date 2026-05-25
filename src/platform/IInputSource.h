@@ -7,6 +7,6 @@ namespace rfs {
 	class IInputSource {
 	public:
 		virtual ~IInputSource() = default;
-		virtual std::span<const InputEvent> Poll(HostNanos pollEnterHostNs) noexcept = 0;
+		virtual std::span<const InputEvent> Poll(HostNanos poll_enter_ns) noexcept = 0;
 	};
 }

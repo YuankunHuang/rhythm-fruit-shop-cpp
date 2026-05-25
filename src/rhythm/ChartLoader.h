@@ -14,7 +14,7 @@ namespace rfs {
 
 	class ChartLoader final {
 	public:
-		std::optional<FrozenChart> Load(const std::filesystem::path& path, LoadError& outError);
+		std::optional<FrozenChart> Load(const std::filesystem::path& path, LoadError& out_error);
 	};
 
 }

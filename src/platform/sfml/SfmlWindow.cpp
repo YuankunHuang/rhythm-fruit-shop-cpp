@@ -12,13 +12,19 @@ struct SfmlWindow::Impl {
 SfmlWindow::~SfmlWindow() = default;
 
 sf::RenderWindow& SfmlWindow::RenderTarget() {
-	return pimpl->window;
+	return pimpl_->window;
 }
 
-SfmlWindow::SfmlWindow(unsigned w, unsigned h, const char* t) : pimpl(std::make_unique<Impl>(w, h, t)) {}
+SfmlWindow::SfmlWindow(unsigned w, unsigned h, const char* t) : pimpl_(std::make_unique<Impl>(w, h, t)) {}
 bool SfmlWindow::IsOpen() const {
-	return pimpl->window.isOpen();
+	return pimpl_->window.isOpen();
 }
 void SfmlWindow::Close() {
-	pimpl->window.close();
+	pimpl_->window.close();
+}
+float SfmlWindow::Width() const {
+	return static_cast<float>(pimpl_->window.getSize().x);
+}
+float SfmlWindow::Height() const {
+	return static_cast<float>(pimpl_->window.getSize().y);
 }
