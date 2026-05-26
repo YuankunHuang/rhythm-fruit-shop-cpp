@@ -12,10 +12,11 @@ namespace rfs {
 		explicit SfmlWindow(unsigned width, unsigned height, const char* title);
 		~SfmlWindow();
 
-		bool  IsOpen()  const override;
-		void  Close()         override;
-		float Width()   const override;
-		float Height()  const override;
+		bool IsOpen() const override;
+		void Close() override;
+		float Width() const override;
+		float Height() const override;
+		void OnResize(unsigned width, unsigned height) override;
 		sf::RenderWindow& RenderTarget();
 
 	private:

@@ -5,7 +5,7 @@
 #include <vector>
 #include <span>
 
-namespace rfs{
+namespace rfs {
 
 	struct NoteDef final {
 		std::uint32_t id = 0;
@@ -23,7 +23,6 @@ namespace rfs{
 
 	private:
 		friend class ChartLoader;
-
 		std::string title_;
 		std::int32_t approach_time_ms_ = 1600;
 		std::uint8_t lane_count_ = 4;

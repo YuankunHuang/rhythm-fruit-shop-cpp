@@ -8,20 +8,16 @@
 
 int main() {
 
-	rfs::SfmlWindow window(800, 600, "Rhythm Fruit Shop");
+	rfs::SfmlWindow window(1280, 720, "Rhythm Fruit Shop");
 	rfs::SfmlRenderer renderer(window);
 	rfs::SfmlInputSource input(window);
-	rfs::MiniaudioAudioPlayer player;
 
-	// test the player
-	if (!player.Load("assets/audio/service/lemon_water_light.mp3")) {
-		return 1; // failed to load audio, cannot continue
-	}
-	player.Play();
+	rfs::MiniaudioAudioPlayer player;
+	rfs::MiniaudioAudioPlayer bgm_player;
 
 	rfs::MiniaudioAudioBackendClock backend_clock{player};
 	rfs::SmoothedSongClock song_clock{};
-	rfs::Application app(window, input, renderer, backend_clock, song_clock);
+	rfs::Application app(window, input, renderer, backend_clock, song_clock, player, bgm_player);
 
 	return app.Run() ? 0 : 1;
 }

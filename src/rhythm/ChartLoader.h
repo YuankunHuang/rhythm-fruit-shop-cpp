@@ -14,7 +14,12 @@ namespace rfs {
 
 	class ChartLoader final {
 	public:
-		std::optional<FrozenChart> Load(const std::filesystem::path& path, LoadError& out_error);
+		// Loads a chart in rfs-cpp-v1 format.
+		// difficulty must match a key inside the "difficulties" object (e.g. "easy", "expert").
+		std::optional<FrozenChart> Load(
+			const std::filesystem::path& path,
+			const std::string& difficulty,
+			LoadError& out_error);
 	};
 
 }

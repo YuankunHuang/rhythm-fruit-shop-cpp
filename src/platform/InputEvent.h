@@ -9,6 +9,7 @@ namespace rfs {
 	enum class InputAction : std::uint8_t {
 		Lane0, Lane1, Lane2, Lane3,
 		Pause, Restart, ToggleDebug, CycleCalibration,
+		NavUp, NavDown, NavLeft, NavRight,
 	};
 
 	struct InputEvent final {

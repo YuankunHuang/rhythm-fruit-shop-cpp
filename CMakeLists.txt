@@ -3,13 +3,18 @@ project(rhythm_fruit_shop LANGUAGES CXX)
 
 include(cmake/Warnings.cmake)
 
+if (MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 find_package(nlohmann_json CONFIG REQUIRED)
 
 # rfs_core: core library, no external dependencies.
 add_library(rfs_core STATIC
 	src/rhythm/ChartLoader.cpp
+	src/rhythm/ChartCatalog.cpp
 	src/rhythm/SmoothedSongClock.cpp
- )
+)
 target_include_directories(rfs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rfs_core 
 	PUBLIC nlohmann_json::nlohmann_json
@@ -52,10 +57,13 @@ target_link_libraries(rfs_platform_miniaudio
 add_library(rfs_app STATIC
 	src/rfs_app.cpp
 	src/app/Application.cpp
-	src/app/StateStack.cpp
-	src/game/MainMenuState.cpp
-	src/game/LoadingState.cpp
-	src/game/GameplayState.cpp
+	src/app/UIManager.cpp
+	src/game/MainMenuScreen.cpp
+	src/game/ChartSelectScreen.cpp
+	src/game/LoadingScreen.cpp
+	src/game/GameplayScreen.cpp
+	src/game/ResultScreen.cpp
+	src/game/PauseScreen.cpp
 )
 target_include_directories(rfs_app
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -82,6 +90,9 @@ target_link_libraries(rfs_demo PRIVATE
 # rfs_tests: test target, depends on rfs_core and one platform implementation.
 add_executable(rfs_tests
 	src/rfs_tests.cpp
+)
+set_target_properties(rfs_tests PROPERTIES
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 target_link_libraries(rfs_tests
 	PRIVATE rfs_core rfs_platform_iface rfs_warnings
