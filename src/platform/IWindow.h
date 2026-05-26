@@ -8,5 +8,6 @@ namespace rfs {
 		virtual void  Close() = 0;
 		virtual float Width()  const = 0;
 		virtual float Height() const = 0;
+		virtual void OnResize(unsigned width, unsigned height) = 0;
 	};
 }

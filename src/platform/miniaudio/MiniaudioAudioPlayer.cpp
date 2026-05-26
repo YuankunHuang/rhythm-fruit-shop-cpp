@@ -93,8 +93,24 @@ namespace rfs {
 	void MiniaudioAudioPlayer::Stop() {
 		ma_sound_stop(&pimpl_->sound_);
 	}
+	void MiniaudioAudioPlayer::Pause() {
+		if (pimpl_->engine_ready_) {
+			ma_engine_stop(&pimpl_->engine_);
+		}
+	}
+	void MiniaudioAudioPlayer::Resume() {
+		if (pimpl_->engine_ready_) {
+			ma_engine_start(&pimpl_->engine_);
+		}
+	}
 	bool MiniaudioAudioPlayer::IsPlaying() const noexcept {
 		return ma_sound_is_playing(&pimpl_->sound_) != 0;
+	}
+
+	void MiniaudioAudioPlayer::SetLooping(bool looping) {
+		if (pimpl_->sound_loaded_) {
+			ma_sound_set_looping(&pimpl_->sound_, looping ? MA_TRUE : MA_FALSE);
+		}
 	}
 
 	std::uint64_t MiniaudioAudioPlayer::CursorInPcmFrames() const {

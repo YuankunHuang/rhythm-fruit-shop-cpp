@@ -8,6 +8,27 @@
 
 using namespace rfs;
 
+namespace {
+	std::optional<InputAction> MapSfmlKeyToInputAction(sf::Keyboard::Key key) {
+		switch (key) {
+		case sf::Keyboard::D: return InputAction::Lane0;
+		case sf::Keyboard::F: return InputAction::Lane1;
+		case sf::Keyboard::J: return InputAction::Lane2;
+		case sf::Keyboard::K: return InputAction::Lane3;
+		case sf::Keyboard::Escape: return InputAction::Pause;
+		case sf::Keyboard::Enter: return InputAction::Restart;
+		case sf::Keyboard::F1: return InputAction::ToggleDebug;
+		case sf::Keyboard::F2: return InputAction::CycleCalibration;
+		case sf::Keyboard::Up: return InputAction::NavUp;
+		case sf::Keyboard::Down: return InputAction::NavDown;
+		case sf::Keyboard::Left: return InputAction::NavLeft;
+		case sf::Keyboard::Right: return InputAction::NavRight;
+		default:
+			return std::nullopt;
+		}
+	}
+}
+
 struct SfmlInputSource::Impl {
 	SfmlWindow& window;
 	std::array<InputEvent, kMaxEventsPerFrame> buffer{};
@@ -36,22 +57,7 @@ SfmlInputSource::SfmlInputSource(SfmlWindow& window) : pimpl_(std::make_unique<I
 
 SfmlInputSource::~SfmlInputSource() = default;
 
-static std::optional<InputAction> MapSfmlKeyToInputAction(sf::Keyboard::Key key) {
-	switch (key) {
-	case sf::Keyboard::D: return InputAction::Lane0;
-	case sf::Keyboard::F: return InputAction::Lane1;
-	case sf::Keyboard::J: return InputAction::Lane2;
-	case sf::Keyboard::K: return InputAction::Lane3;
-	case sf::Keyboard::Escape: return InputAction::Pause;
-	case sf::Keyboard::Enter: return InputAction::Restart;
-	case sf::Keyboard::F1: return InputAction::ToggleDebug;
-	case sf::Keyboard::F2: return InputAction::CycleCalibration;
-	default:
-		return std::nullopt;
-	}
-}
-
-std::span<const InputEvent> SfmlInputSource::Poll([[maybe_unused]] HostNanos poll_enter_ns) noexcept {
+std::span<const InputEvent> SfmlInputSource::Poll(HostNanos poll_enter_ns) noexcept {
 
 	pimpl_->Clear(); // we don't want to keep old events around, clean start
 
@@ -63,6 +69,11 @@ std::span<const InputEvent> SfmlInputSource::Poll([[maybe_unused]] HostNanos pol
 	while (pimpl_->window.RenderTarget().pollEvent(evt)) {
 		if (evt.type == sf::Event::Closed) {
 			pimpl_->window.Close();
+			continue;
+		}
+
+		if (evt.type == sf::Event::Resized) {
+			pimpl_->window.OnResize(evt.size.width, evt.size.height);
 			continue;
 		}
 
