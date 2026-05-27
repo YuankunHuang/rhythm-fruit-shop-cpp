@@ -1,0 +1,190 @@
+{
+  "schema": "rfs-cpp-v1",
+  "id": "hot-orange-juice",
+  "title": "Hot Orange Juice",
+  "approach_time_ms": 1600,
+  "difficulties": {
+    "service": [
+      {
+        "id": 0,
+        "time_ms": 8,
+        "lane": 0,
+        "visual": 0
+      },
+      {
+        "id": 1,
+        "time_ms": 853,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 2,
+        "time_ms": 1275,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 3,
+        "time_ms": 2543,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 4,
+        "time_ms": 2965,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 5,
+        "time_ms": 4233,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 6,
+        "time_ms": 5923,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 7,
+        "time_ms": 6768,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 8,
+        "time_ms": 7614,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 9,
+        "time_ms": 8036,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 10,
+        "time_ms": 9304,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 11,
+        "time_ms": 9726,
+        "lane": 3,
+        "visual": 3
+      },
+      {
+        "id": 12,
+        "time_ms": 10994,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 13,
+        "time_ms": 12684,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 14,
+        "time_ms": 13529,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 15,
+        "time_ms": 14374,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 16,
+        "time_ms": 14797,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 17,
+        "time_ms": 15219,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 18,
+        "time_ms": 16487,
+        "lane": 2,
+        "visual": 2
+      },
+      {
+        "id": 19,
+        "time_ms": 17755,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 20,
+        "time_ms": 18177,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 21,
+        "time_ms": 18600,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 22,
+        "time_ms": 19022,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 23,
+        "time_ms": 19445,
+        "lane": 3,
+        "visual": 3
+      },
+      {
+        "id": 24,
+        "time_ms": 19868,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 25,
+        "time_ms": 20290,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 26,
+        "time_ms": 21135,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 27,
+        "time_ms": 21558,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 28,
+        "time_ms": 21980,
+        "lane": 3,
+        "visual": 0
+      },
+      {
+        "id": 29,
+        "time_ms": 23248,
+        "lane": 1,
+        "visual": 1
+      }
+    ]
+  }
+}

@@ -45,7 +45,7 @@ namespace rfs {
 		ctx_.renderer.SubmitText({
 			ui.content_center_x, ui.content_center_y + line_gap,
 			Anchor::Center, TextStyle::Caption,
-			"ENTER  Select Song   ESC  Quit", GameColors::kTextGray });
+			"ENTER: Select Song          ESC: Quit", GameColors::kTextGray });
 	}
 
 	void MainMenuScreen::HandleInput(const InputEvent& evt) {

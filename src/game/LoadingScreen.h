@@ -35,6 +35,7 @@ namespace rfs {
 		GameConfig::UiLayout ui_{};
 
 		std::string audio_path_;
+		std::string chart_path_;
 
 		bool ready_ = false;
 		bool load_ok_ = false;

@@ -1,17 +1,28 @@
 #include "PauseScreen.h"
 #include "GameColors.h"
 #include "GameConfig.h"
+#include <chrono>
 
 namespace rfs {
+
+	namespace {
+		HostNanos SteadyNowNs() {
+			return std::chrono::steady_clock::now().time_since_epoch().count();
+		}
+	}
 
 	PauseScreen::PauseScreen(GameContext& ctx) : ctx_(ctx) {}
 
 	void PauseScreen::OnEnter() {
+		const HostNanos host_now = SteadyNowNs();
+		ctx_.song_clock.SetFrozen(ctx_.song_clock.NowMs(host_now), host_now);
 		ctx_.audio.Pause();
 	}
 
 	void PauseScreen::OnExit() {
+		const HostNanos host_now = SteadyNowNs();
 		ctx_.audio.Resume();
+		ctx_.song_clock.ClearFrozen(host_now);
 	}
 
 	void PauseScreen::Update(const FrameContext& ctx) {

@@ -1,0 +1,220 @@
+{
+  "schema": "rfs-cpp-v1",
+  "id": "citrus-fizz",
+  "title": "Citrus Fizz",
+  "approach_time_ms": 1600,
+  "difficulties": {
+    "service": [
+      {
+        "id": 0,
+        "time_ms": 3108,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 1,
+        "time_ms": 4852,
+        "lane": 1,
+        "visual": 1
+      },
+      {
+        "id": 2,
+        "time_ms": 6597,
+        "lane": 2,
+        "visual": 2
+      },
+      {
+        "id": 3,
+        "time_ms": 7033,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 4,
+        "time_ms": 7469,
+        "lane": 3,
+        "visual": 0
+      },
+      {
+        "id": 5,
+        "time_ms": 7905,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 6,
+        "time_ms": 8342,
+        "lane": 2,
+        "visual": 2
+      },
+      {
+        "id": 7,
+        "time_ms": 8778,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 8,
+        "time_ms": 9214,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 9,
+        "time_ms": 9650,
+        "lane": 1,
+        "visual": 1
+      },
+      {
+        "id": 10,
+        "time_ms": 10086,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 11,
+        "time_ms": 10522,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 12,
+        "time_ms": 10958,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 13,
+        "time_ms": 11395,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 14,
+        "time_ms": 11831,
+        "lane": 2,
+        "visual": 2
+      },
+      {
+        "id": 15,
+        "time_ms": 12267,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 16,
+        "time_ms": 12703,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 17,
+        "time_ms": 13139,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 18,
+        "time_ms": 13575,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 19,
+        "time_ms": 14012,
+        "lane": 3,
+        "visual": 3
+      },
+      {
+        "id": 20,
+        "time_ms": 14448,
+        "lane": 0,
+        "visual": 0
+      },
+      {
+        "id": 21,
+        "time_ms": 14884,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 22,
+        "time_ms": 15320,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 23,
+        "time_ms": 15756,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 24,
+        "time_ms": 16192,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 25,
+        "time_ms": 16629,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 26,
+        "time_ms": 17065,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 27,
+        "time_ms": 17501,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 28,
+        "time_ms": 17937,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 29,
+        "time_ms": 18373,
+        "lane": 1,
+        "visual": 1
+      },
+      {
+        "id": 30,
+        "time_ms": 18809,
+        "lane": 1,
+        "visual": 2
+      },
+      {
+        "id": 31,
+        "time_ms": 19245,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 32,
+        "time_ms": 19682,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 33,
+        "time_ms": 20118,
+        "lane": 1,
+        "visual": 1
+      },
+      {
+        "id": 34,
+        "time_ms": 20554,
+        "lane": 1,
+        "visual": 2
+      }
+    ]
+  }
+}
