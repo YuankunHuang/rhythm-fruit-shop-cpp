@@ -43,10 +43,10 @@ namespace rfs {
 
 		ctx_.renderer.SubmitText({ cx, base_y, Anchor::Center, TextStyle::Title,
 			"PAUSED", GameColors::kTextWhite });
-		ctx_.renderer.SubmitText({ cx, base_y + line_gap, Anchor::Center, TextStyle::Body,
-			"Enter  Quit to Menu", GameColors::kTextGray });
-		ctx_.renderer.SubmitText({ cx, base_y + line_gap * 2.f, Anchor::Center, TextStyle::Caption,
-			"Esc    Resume", GameColors::kMiss });
+		ctx_.renderer.SubmitText({ cx, base_y + line_gap * 2.f, Anchor::Center, TextStyle::Body,
+			"Esc    Resume", GameColors::kTextGray });
+		ctx_.renderer.SubmitText({ cx, base_y + line_gap * 3.f, Anchor::Center, TextStyle::Caption,
+			"Enter  Quit to Menu", GameColors::kMiss });
 	}
 
 	void PauseScreen::HandleInput(const InputEvent& evt) {
