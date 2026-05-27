@@ -140,13 +140,16 @@ namespace rfs {
 		// Find nearest unhit note in this lane within Good window
 		int best_idx = -1;
 		int32_t best_dt = JudgeWindows::kGood + 1;
+		const int32_t input_ms = evt.event_song_time_ms != 0
+			? evt.event_song_time_ms
+			: static_cast<int32_t>(song_time_ms_);
 		const auto& notes = chart_.Notes();
 		for (int i = next_idx_; i < static_cast<int>(notes.size()); ++i) {
 			if (note_hit_[i]) continue;
 			if (notes[i].lane != static_cast<uint8_t>(lane)) continue;
-			int32_t dt = std::abs(notes[i].time_ms - static_cast<int32_t>(song_time_ms_));
+			int32_t dt = std::abs(notes[i].time_ms - input_ms);
 			if (dt > JudgeWindows::kGood) {
-				if (notes[i].time_ms - song_time_ms_ > JudgeWindows::kGood) break; // future notes too far ahead
+				if (notes[i].time_ms - input_ms > JudgeWindows::kGood) break;
 				continue;
 			}
 			if (dt < best_dt) { best_dt = dt; best_idx = i; }

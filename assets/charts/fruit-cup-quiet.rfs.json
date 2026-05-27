@@ -1,0 +1,370 @@
+{
+  "schema": "rfs-cpp-v1",
+  "id": "fruit-cup-quiet",
+  "title": "Fruit Cup Quiet",
+  "approach_time_ms": 1600,
+  "difficulties": {
+    "service": [
+      {
+        "id": 0,
+        "time_ms": 564,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 1,
+        "time_ms": 837,
+        "lane": 1,
+        "visual": 1
+      },
+      {
+        "id": 2,
+        "time_ms": 1110,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 3,
+        "time_ms": 1382,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 4,
+        "time_ms": 1655,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 5,
+        "time_ms": 1928,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 6,
+        "time_ms": 2201,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 7,
+        "time_ms": 2474,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 8,
+        "time_ms": 2747,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 9,
+        "time_ms": 3019,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 10,
+        "time_ms": 3292,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 11,
+        "time_ms": 3565,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 12,
+        "time_ms": 3838,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 13,
+        "time_ms": 4111,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 14,
+        "time_ms": 4384,
+        "lane": 2,
+        "visual": 2
+      },
+      {
+        "id": 15,
+        "time_ms": 4656,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 16,
+        "time_ms": 4929,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 17,
+        "time_ms": 5202,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 18,
+        "time_ms": 5475,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 19,
+        "time_ms": 5748,
+        "lane": 1,
+        "visual": 3
+      },
+      {
+        "id": 20,
+        "time_ms": 6021,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 21,
+        "time_ms": 6293,
+        "lane": 0,
+        "visual": 1
+      },
+      {
+        "id": 22,
+        "time_ms": 6566,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 23,
+        "time_ms": 7112,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 24,
+        "time_ms": 7385,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 25,
+        "time_ms": 7657,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 26,
+        "time_ms": 8749,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 27,
+        "time_ms": 8749,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 28,
+        "time_ms": 9840,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 29,
+        "time_ms": 10386,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 30,
+        "time_ms": 10931,
+        "lane": 1,
+        "visual": 2
+      },
+      {
+        "id": 31,
+        "time_ms": 11341,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 32,
+        "time_ms": 11750,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 33,
+        "time_ms": 12568,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 34,
+        "time_ms": 13114,
+        "lane": 1,
+        "visual": 2
+      },
+      {
+        "id": 35,
+        "time_ms": 13114,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 36,
+        "time_ms": 14205,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 37,
+        "time_ms": 14751,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 38,
+        "time_ms": 15297,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 39,
+        "time_ms": 16388,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 40,
+        "time_ms": 16934,
+        "lane": 2,
+        "visual": 0
+      },
+      {
+        "id": 41,
+        "time_ms": 17479,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 42,
+        "time_ms": 19662,
+        "lane": 1,
+        "visual": 2
+      },
+      {
+        "id": 43,
+        "time_ms": 20208,
+        "lane": 2,
+        "visual": 3
+      },
+      {
+        "id": 44,
+        "time_ms": 20480,
+        "lane": 0,
+        "visual": 0
+      },
+      {
+        "id": 45,
+        "time_ms": 20753,
+        "lane": 3,
+        "visual": 1
+      },
+      {
+        "id": 46,
+        "time_ms": 21299,
+        "lane": 2,
+        "visual": 2
+      },
+      {
+        "id": 47,
+        "time_ms": 21572,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 48,
+        "time_ms": 21845,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 49,
+        "time_ms": 22117,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 50,
+        "time_ms": 22390,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 51,
+        "time_ms": 22663,
+        "lane": 0,
+        "visual": 3
+      },
+      {
+        "id": 52,
+        "time_ms": 22936,
+        "lane": 1,
+        "visual": 0
+      },
+      {
+        "id": 53,
+        "time_ms": 23345,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 54,
+        "time_ms": 23754,
+        "lane": 0,
+        "visual": 2
+      },
+      {
+        "id": 55,
+        "time_ms": 24027,
+        "lane": 3,
+        "visual": 3
+      },
+      {
+        "id": 56,
+        "time_ms": 24573,
+        "lane": 0,
+        "visual": 0
+      },
+      {
+        "id": 57,
+        "time_ms": 25119,
+        "lane": 2,
+        "visual": 1
+      },
+      {
+        "id": 58,
+        "time_ms": 26210,
+        "lane": 3,
+        "visual": 2
+      },
+      {
+        "id": 59,
+        "time_ms": 27352,
+        "lane": 1,
+        "visual": 3
+      }
+    ]
+  }
+}

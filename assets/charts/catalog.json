@@ -1,3 +1,452 @@
 {
-  "songs": []
+  "songs": [
+    {
+      "id": "ark-light",
+      "title": "Ark Light",
+      "audio": "assets/audio/tracks/ark-light.mp3",
+      "chart": "assets/charts/ark-light.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "asura",
+      "title": "Asura",
+      "audio": "assets/audio/tracks/asura.mp3",
+      "chart": "assets/charts/asura.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "beethoven",
+      "title": "Beethoven",
+      "audio": "assets/audio/tracks/beethoven.mp3",
+      "chart": "assets/charts/beethoven.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "citrus-fizz",
+      "title": "Citrus Fizz",
+      "audio": "assets/audio/service/citrus_fizz.mp3",
+      "chart": "assets/charts/citrus-fizz.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "drama",
+      "title": "Drama",
+      "audio": "assets/audio/tracks/drama.mp3",
+      "chart": "assets/charts/drama.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "faraway",
+      "title": "Faraway",
+      "audio": "assets/audio/tracks/faraway.mp3",
+      "chart": "assets/charts/faraway.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "felis",
+      "title": "Felis",
+      "audio": "assets/audio/tracks/felis.mp3",
+      "chart": "assets/charts/felis.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "first-choice",
+      "title": "First Choice",
+      "audio": "assets/audio/tracks/first-choice.mp3",
+      "chart": "assets/charts/first-choice.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "fresh-orange-juice",
+      "title": "Fresh Orange Juice",
+      "audio": "assets/audio/service/fresh_orange_juice.mp3",
+      "chart": "assets/charts/fresh-orange-juice.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "fruit-cup-quiet",
+      "title": "Fruit Cup Quiet",
+      "audio": "assets/audio/service/fruit_cup_quiet.mp3",
+      "chart": "assets/charts/fruit-cup-quiet.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "fruit-cup",
+      "title": "Fruit Cup",
+      "audio": "assets/audio/service/fruit_cup.mp3",
+      "chart": "assets/charts/fruit-cup.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "fruit-platter",
+      "title": "Fruit Platter",
+      "audio": "assets/audio/service/fruit_platter.mp3",
+      "chart": "assets/charts/fruit-platter.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "grafiore",
+      "title": "Grafiore",
+      "audio": "assets/audio/tracks/grafiore.mp3",
+      "chart": "assets/charts/grafiore.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "grape-smoothie-afterglow",
+      "title": "Grape Smoothie Afterglow",
+      "audio": "assets/audio/service/grape_smoothie_afterglow.mp3",
+      "chart": "assets/charts/grape-smoothie-afterglow.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "grape-smoothie-smolder",
+      "title": "Grape Smoothie Smolder",
+      "audio": "assets/audio/service/grape_smoothie_smolder.mp3",
+      "chart": "assets/charts/grape-smoothie-smolder.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "grape-smoothie-still",
+      "title": "Grape Smoothie Still",
+      "audio": "assets/audio/service/grape_smoothie_still.mp3",
+      "chart": "assets/charts/grape-smoothie-still.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "grypsy-tronic",
+      "title": "Grypsy Tronic",
+      "audio": "assets/audio/tracks/grypsy-tronic.mp3",
+      "chart": "assets/charts/grypsy-tronic.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "hot-orange-juice",
+      "title": "Hot Orange Juice",
+      "audio": "assets/audio/service/hot_orange_juice.mp3",
+      "chart": "assets/charts/hot-orange-juice.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "ineffable",
+      "title": "Ineffable",
+      "audio": "assets/audio/tracks/ineffable.mp3",
+      "chart": "assets/charts/ineffable.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "lemon-water-light",
+      "title": "Lemon Water Light",
+      "audio": "assets/audio/service/lemon_water_light.mp3",
+      "chart": "assets/charts/lemon-water-light.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "lemon-water",
+      "title": "Lemon Water",
+      "audio": "assets/audio/service/lemon_water.mp3",
+      "chart": "assets/charts/lemon-water.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "lets-drive",
+      "title": "Lets Drive",
+      "audio": "assets/audio/tracks/lets_drive.mp3",
+      "chart": "assets/charts/lets-drive.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "lunatic-sky",
+      "title": "Lunatic Sky",
+      "audio": "assets/audio/tracks/lunatic-sky.mp3",
+      "chart": "assets/charts/lunatic-sky.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "lychee-juice",
+      "title": "Lychee Juice",
+      "audio": "assets/audio/service/lychee_juice.mp3",
+      "chart": "assets/charts/lychee-juice.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "maidens-capriccio",
+      "title": "Maidens Capriccio",
+      "audio": "assets/audio/tracks/maidens-capriccio.mp3",
+      "chart": "assets/charts/maidens-capriccio.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "masquerade",
+      "title": "Masquerade",
+      "audio": "assets/audio/tracks/masquerade.mp3",
+      "chart": "assets/charts/masquerade.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "megaburn",
+      "title": "Megaburn",
+      "audio": "assets/audio/tracks/megaburn.mp3",
+      "chart": "assets/charts/megaburn.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "nb-blast",
+      "title": "Nb Blast",
+      "audio": "assets/audio/tracks/nb-blast.mp3",
+      "chart": "assets/charts/nb-blast.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "necro-fantasy",
+      "title": "Necro Fantasy",
+      "audio": "assets/audio/tracks/necro-fantasy.mp3",
+      "chart": "assets/charts/necro-fantasy.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "night-of-fire",
+      "title": "Night Of Fire",
+      "audio": "assets/audio/tracks/night-of-fire.mp3",
+      "chart": "assets/charts/night-of-fire.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "open-the-fruit-stand!",
+      "title": "Open The Fruit Stand!",
+      "audio": "assets/audio/tracks/open-the-fruit-stand!.mp3",
+      "chart": "assets/charts/open-the-fruit-stand!.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "please",
+      "title": "Please",
+      "audio": "assets/audio/tracks/please.mp3",
+      "chart": "assets/charts/please.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "purple-passion",
+      "title": "Purple Passion",
+      "audio": "assets/audio/tracks/purple-passion.mp3",
+      "chart": "assets/charts/purple-passion.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "qua-vadis",
+      "title": "Qua Vadis",
+      "audio": "assets/audio/tracks/qua-vadis.mp3",
+      "chart": "assets/charts/qua-vadis.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "seeker",
+      "title": "Seeker",
+      "audio": "assets/audio/tracks/seeker.mp3",
+      "chart": "assets/charts/seeker.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "test-fixture",
+      "title": "Test Fixture",
+      "audio": "",
+      "chart": "assets/charts/test_fixture.rfs.json",
+      "difficulties": [
+        "easy",
+        "expert"
+      ]
+    },
+    {
+      "id": "toy-war",
+      "title": "Toy War",
+      "audio": "assets/audio/tracks/toy-war.mp3",
+      "chart": "assets/charts/toy-war.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "tutorial",
+      "title": "Tutorial",
+      "audio": "assets/audio/tracks/tutorial.mp3",
+      "chart": "assets/charts/tutorial.rfs.json",
+      "difficulties": [
+        "easy"
+      ]
+    },
+    {
+      "id": "unwelcome-school",
+      "title": "Unwelcome School",
+      "audio": "assets/audio/tracks/unwelcome-school.mp3",
+      "chart": "assets/charts/unwelcome-school.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
+      "id": "warm-lemon-water",
+      "title": "Warm Lemon Water",
+      "audio": "assets/audio/service/warm_lemon_water.mp3",
+      "chart": "assets/charts/warm-lemon-water.rfs.json",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "wings-of-silence",
+      "title": "Wings Of Silence",
+      "audio": "assets/audio/tracks/wings-of-silence.mp3",
+      "chart": "assets/charts/wings-of-silence.rfs.json",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    }
+  ]
 }

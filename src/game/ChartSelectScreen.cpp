@@ -2,6 +2,7 @@
 #include "LoadingScreen.h"
 #include "GameColors.h"
 #include "GameConfig.h"
+#include "../rhythm/SongDisplay.h"
 #include <string>
 #include <algorithm>
 
@@ -10,10 +11,11 @@ namespace rfs {
 	namespace {
 
 		std::string_view DiffDisplayName(std::string_view key) {
-			if (key == "easy")   return "Easy";
-			if (key == "normal") return "Normal";
-			if (key == "hard")   return "Hard";
-			if (key == "expert") return "Expert";
+			if (key == "easy")    return "Easy";
+			if (key == "normal")  return "Normal";
+			if (key == "hard")    return "Hard";
+			if (key == "expert")  return "Expert";
+			if (key == "service") return "Service";
 			return key;
 		}
 
@@ -121,7 +123,7 @@ namespace rfs {
 			ctx_.renderer.SubmitText({
 				list_left, y,
 				Anchor::CenterLeft, style,
-				songs[song_idx].title, color });
+				DisplaySongTitle(songs[song_idx]), color });
 		}
 
 		// Difficulty tabs for selected song
@@ -156,7 +158,7 @@ namespace rfs {
 		ctx_.renderer.SubmitText({
 			cx, ui.content_bottom,
 			Anchor::BottomCenter, TextStyle::Caption,
-			"ENTER  Play   \xE2\x86\x91\xE2\x86\x93 Navigate   \xE2\x86\x90\xE2\x86\x92 Difficulty   ESC  Back",
+			"ENTER Play    Up/Down Song    Left/Right Difficulty    ESC Back",
 			GameColors::kTextHint });
 	}
 

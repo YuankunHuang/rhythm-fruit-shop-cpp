@@ -14,6 +14,8 @@ add_library(rfs_core STATIC
 	src/rhythm/ChartLoader.cpp
 	src/rhythm/ChartCatalog.cpp
 	src/rhythm/SmoothedSongClock.cpp
+	src/rhythm/AudioPathResolver.cpp
+	src/rhythm/SongDisplay.cpp
 )
 target_include_directories(rfs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rfs_core 

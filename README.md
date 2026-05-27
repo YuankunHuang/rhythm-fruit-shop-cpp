@@ -26,24 +26,43 @@ into the same folder as `rfs_demo.exe`.
 
 ## Controls
 
-| Key | In gameplay | In pause menu |
-|-----|-------------|---------------|
-| **D F J K** | Lanes 0–3 | — |
-| **Enter** | Start (main menu) / confirm (loading, result) | Return to main menu |
-| **Esc** | Open pause overlay | Resume |
+| Key | In gameplay | In pause menu | In song select |
+|-----|-------------|---------------|----------------|
+| **D F J K** | Lanes 0–3 | — | — |
+| **Up / Down** | — | — | Change song |
+| **Left / Right** | — | — | Change difficulty |
+| **Enter** | Start (main menu) / confirm (loading, result) | Return to main menu | Start selected song |
+| **Esc** | Open pause overlay | Resume | Back |
 
 Default window size: **1280×720**.
 
 ## Demo Flow
 
 ```
-MainMenu → Loading (async chart load) → Gameplay → Result → MainMenu
+MainMenu → ChartSelect → Loading (async chart load) → Gameplay → Result → MainMenu
                               ↑
                          Pause overlay (Esc)
 ```
 
-Shipped demo chart: `assets/charts/service/lemon-water-light.json`  
-Demo audio: `assets/audio/service/lemon_water_light.mp3`
+Song list and audio paths come from `assets/charts/catalog.json`. Rebuild the catalog after importing charts or converting audio:
+
+```bat
+python ..\scripts\rebuild_cpp_catalog.py
+```
+
+Import osu!mania charts from `imports/<song-id>/mug/*.osz`:
+
+```bat
+..\03_import_for_cpp.bat
+```
+
+Example playable entries:
+
+| Song ID | Difficulty | Audio |
+|---------|------------|-------|
+| `lemon-water-light` | service | `assets/audio/service/lemon_water_light.mp3` |
+| `lets-drive` | easy | `assets/audio/tracks/lets_drive.mp3` |
+| `drama` | easy/normal/hard/expert | `assets/audio/tracks/drama.mp3` |
 
 ## Architecture
 
@@ -56,7 +75,7 @@ main.cpp / rfs_demo          composition root — wires concrete backends
     ├── rfs_platform_sfml    SfmlWindow, SfmlRenderer, SfmlInputSource
     ├── rfs_platform_miniaudio   MiniaudioAudioPlayer, MiniaudioAudioBackendClock
     │
-    └── rfs_core             ChartLoader, FrozenChart, SmoothedSongClock
+    └── rfs_core             ChartLoader, FrozenChart, SmoothedSongClock, AudioPathResolver
             └── no SFML, no miniaudio (enforced by CMake dependency guards)
 ```
 
@@ -69,26 +88,32 @@ Song time is **not** advanced by frame `deltaTime`.
 ```
 miniaudio PCM cursor          (IAudioBackendClock)
         ↓
-SmoothedSongClock             EMA smoothing + re-anchor
+SmoothedSongClock             host interpolation + EMA re-anchor + pause freeze
         ↓
 FrameContext.song_time_ms     consumed by GameplayScreen
         ↓
-note spawn Y + input judgment delta vs targetTimeMs
+note spawn Y + input judgment (event_song_time_ms from reverse-mapped host timestamp)
 ```
 
-Input events carry a host-monotonic timestamp at poll time; judgment compares mapped song time against each note's `timeMs`.
+Input events carry a per-key host-monotonic timestamp at poll time; judgment compares mapped song time against each note's `timeMs`.
 
 ## CMake Targets
 
 | Target | Role |
 |--------|------|
-| `rfs_core` | Rhythm core — chart load, frozen chart data, smoothed clock |
+| `rfs_core` | Rhythm core — chart load, frozen chart data, smoothed clock, audio path resolver |
 | `rfs_platform_iface` | Header-only platform contracts (`IWindow`, `IRenderer`, …) |
 | `rfs_platform_sfml` | SFML 2.6 window, render, input |
 | `rfs_platform_miniaudio` | Audio playback + sample-position clock |
 | `rfs_app` | Screens, game loop, scoring / grading rules |
 | `rfs_demo` | Runnable game executable |
 | `rfs_tests` | Headless core tests (no window, no audio device) |
+
+Run tests from the `cpp_core/` working directory:
+
+```bat
+out\build\x64-Debug\rfs_tests.exe
+```
 
 ## Project Layout
 
@@ -101,7 +126,7 @@ cpp_core/
     app/           Application, UIManager, IScreen
     game/          screens, layout, rules
     platform/      interfaces + SFML / miniaudio backends
-    rhythm/        ChartLoader, SmoothedSongClock, FrozenChart
+    rhythm/        ChartLoader, SmoothedSongClock, FrozenChart, AudioPathResolver
   vcpkg.json       SFML 2.6.1 (pinned), nlohmann-json
 ```
 

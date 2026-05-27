@@ -1,5 +1,6 @@
 #include "ChartLoader.h"
 #include <fstream>
+#include <algorithm>
 #include <nlohmann/json.hpp>
 
 namespace rfs {
@@ -60,6 +61,14 @@ namespace rfs {
 		}
 
 		chart.lane_count_ = chart.notes_.empty() ? 4 : static_cast<uint8_t>(max_lane + 1);
+
+		std::sort(chart.notes_.begin(), chart.notes_.end(),
+			[](const NoteDef& a, const NoteDef& b) {
+				if (a.time_ms != b.time_ms) return a.time_ms < b.time_ms;
+				if (a.lane != b.lane) return a.lane < b.lane;
+				return a.id < b.id;
+			});
+
 		return chart;
 	}
 

@@ -2,6 +2,8 @@
 #include "GameplayScreen.h"
 #include "GameColors.h"
 #include "GameConfig.h"
+#include "../rhythm/AudioPathResolver.h"
+#include "../rhythm/SongDisplay.h"
 #include <chrono>
 
 namespace rfs {
@@ -15,7 +17,8 @@ namespace rfs {
 		if (chart.has_value()) {
 			r.ok = true;
 			r.chart = std::move(chart);
-			r.title = r.chart->Title();
+			const auto song_id = AudioPathResolver::SongIdFromChartPath(path);
+			r.title = HumanizeSongId(song_id);
 			r.detail = "Notes: " + std::to_string(r.chart->Notes().size())
 				+ "   Lanes: " + std::to_string(r.chart->LaneCount());
 		}
@@ -34,6 +37,7 @@ namespace rfs {
 		std::string audio_path)
 		: ctx_(ctx)
 		, audio_path_(std::move(audio_path))
+		, chart_path_(chart_path)
 	{
 		future_ = std::async(std::launch::async, DoLoad,
 			std::move(chart_path), std::move(difficulty));
@@ -51,6 +55,20 @@ namespace rfs {
 				detail_ = std::move(result.detail);
 				chart_ = std::move(result.chart);
 				ready_ = true;
+
+				if (load_ok_) {
+					const auto song_id = AudioPathResolver::SongIdFromChartPath(chart_path_);
+					const auto resolved = AudioPathResolver::Resolve(song_id, audio_path_);
+					if (resolved) {
+						audio_path_ = resolved->string();
+						detail_ += "   Audio: OK";
+					}
+					else {
+						load_ok_ = false;
+						title_ = "Audio not found";
+						detail_ = "Could not resolve audio for: " + song_id;
+					}
+				}
 			}
 		}
 	}
@@ -99,11 +117,26 @@ namespace rfs {
 			return;
 		}
 
-		if (!ready_) return;
+		if (!ready_ || !load_ok_) return;
 
-		if (evt.action == InputAction::Restart && load_ok_ && chart_.has_value()) {
+		if (evt.action == InputAction::Restart && chart_.has_value()) {
+			const auto song_id = AudioPathResolver::SongIdFromChartPath(chart_path_);
+			const auto resolved = AudioPathResolver::Resolve(song_id, audio_path_);
+			if (!resolved) {
+				load_ok_ = false;
+				title_ = "Audio not found";
+				detail_ = "Could not resolve audio for: " + song_id;
+				return;
+			}
+
 			ctx_.audio.Stop();
-			ctx_.audio.Load(audio_path_);
+			if (!ctx_.audio.Load(*resolved)) {
+				load_ok_ = false;
+				title_ = "Audio load failed";
+				detail_ = resolved->string();
+				return;
+			}
+
 			ctx_.song_clock.Reset();
 			ctx_.audio.Play();
 			ctx_.ui.ReplaceTop(std::make_unique<GameplayScreen>(ctx_, std::move(*chart_)));

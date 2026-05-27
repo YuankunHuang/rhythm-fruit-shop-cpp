@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include "../InputEvent.h"
 #include <array>
+#include <chrono>
 #include <optional>
 
 using namespace rfs;
@@ -57,9 +58,9 @@ SfmlInputSource::SfmlInputSource(SfmlWindow& window) : pimpl_(std::make_unique<I
 
 SfmlInputSource::~SfmlInputSource() = default;
 
-std::span<const InputEvent> SfmlInputSource::Poll(HostNanos poll_enter_ns) noexcept {
+std::span<InputEvent> SfmlInputSource::Poll(HostNanos poll_enter_ns) noexcept {
 
-	pimpl_->Clear(); // we don't want to keep old events around, clean start
+	pimpl_->Clear();
 
 	if (!pimpl_->window.IsOpen()) {
 		return {};
@@ -81,10 +82,12 @@ std::span<const InputEvent> SfmlInputSource::Poll(HostNanos poll_enter_ns) noexc
 			const bool pressed = evt.type == sf::Event::KeyPressed;
 			const auto action = MapSfmlKeyToInputAction(evt.key.code);
 			if (action.has_value()) {
-				pimpl_->Push(action.value(), pressed, poll_enter_ns);
+				const HostNanos event_ns = std::chrono::steady_clock::now().time_since_epoch().count();
+				pimpl_->Push(action.value(), pressed, event_ns);
 			}
 		}
 	}
 
+	(void)poll_enter_ns;
 	return { pimpl_->buffer.data(), pimpl_->count };
 }
