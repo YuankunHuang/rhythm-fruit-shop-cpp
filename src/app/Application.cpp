@@ -58,9 +58,10 @@ namespace rfs {
 
 			ui.Top().Update(frame);
 
-			renderer_.SetWindowSize(frame.win_w, frame.win_h);
-			renderer_.BeginFrame();
-			renderer_.Clear(0x1E, 0x1E, 0x28);
+		renderer_.SetWindowSize(frame.win_w, frame.win_h);
+		renderer_.PollAsyncLoads();
+		renderer_.BeginFrame();
+		renderer_.Clear(0x1E, 0x1E, 0x28);
 
 			const auto& screens = ui.Screens();
 			int render_from = static_cast<int>(screens.size()) - 1;

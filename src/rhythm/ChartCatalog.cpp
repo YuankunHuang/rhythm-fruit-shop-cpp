@@ -33,6 +33,7 @@ namespace rfs {
 			song.title = entry.value("title", "");
 			song.audio_path = entry.value("audio", "");
 			song.chart_path = entry.value("chart", "");
+			song.cover_path = entry.value("cover", "");
 
 			if (entry.contains("difficulties") && entry["difficulties"].is_array()) {
 				for (const auto& d : entry["difficulties"]) {

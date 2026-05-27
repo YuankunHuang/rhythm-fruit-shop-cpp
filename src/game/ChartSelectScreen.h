@@ -21,6 +21,7 @@ namespace rfs {
 
 	private:
 		void ConfirmSelection();
+		void StartPreviewForCurrentSong();
 
 		GameContext ctx_;
 		GameConfig::UiLayout ui_{};
@@ -30,10 +31,27 @@ namespace rfs {
 
 		int selected_song_ = 0;
 		int selected_diff_ = 0;
+		int selected_speed_idx_ = GameConfig::kDefaultSpeedIndex;
 
 		// How many songs fit in the visible list area
 		static constexpr int kVisibleRows = 7;
 		int scroll_offset_ = 0;
+
+		// preview
+		enum class PreviewState { Idle, Loading, FadeIn, Playing, FadeOut };
+		PreviewState preview_state_ = PreviewState::Idle;
+		float preview_timer_ms_ = 0.f;
+		float preview_vol_ = 0.f;
+
+		// cover
+		int cover_handle_ = -1;         // currently displayed handle (may be fallback)
+		int old_cover_handle_ = -1;     // previous handle during crossfade
+		int fallback_handle_ = -1;      // cover-fallback.png, loaded once at startup
+		int cover_pending_handle_ = -2; // -2 = no pending load
+		float crossfade_t_ = 1.f;       // 0→1; 1 means crossfade complete
+		std::string cover_path_loaded_;
+
+		static constexpr float kCrossfadeSpeed = 1.f / 0.4f; // 0.4s
 	};
 
 }

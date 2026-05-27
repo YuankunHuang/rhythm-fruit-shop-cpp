@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <string>
 
 namespace rfs {
 
@@ -46,6 +47,12 @@ namespace rfs {
 		virtual void SubmitText(const TextDraw& draw) = 0;
 		virtual void SubmitLine(const LineDraw& draw) = 0;
 		virtual void SubmitQuad(const QuadDraw& draw) = 0;
+		virtual void SubmitSprite(float x, float y, float w, float h, int texture_handle, float alpha = 1.f) = 0;
 		virtual float MeasureTextWidth(std::string_view text, TextStyle style) = 0;
+		virtual int LoadTexture(const std::string& path) = 0;
+		virtual int LoadTextureAsync(const std::string& path) = 0;
+		virtual void PollAsyncLoads() = 0;
+		virtual bool IsTextureReady(int handle) = 0;
+		virtual bool GetTextureSize(int handle, float& w, float& h) = 0;
 	};
 }

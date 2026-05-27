@@ -24,6 +24,5 @@ namespace rfs {
 
 		GameContext ctx_;
 		GameConfig::UiLayout ui_{};
-		bool bgm_loaded_ = false;
 	};
 }

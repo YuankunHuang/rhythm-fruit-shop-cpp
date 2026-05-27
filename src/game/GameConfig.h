@@ -10,6 +10,14 @@ namespace GameConfig {
 	// Loading
 	constexpr float kSpinnerPeriodMs = 800.f;
 
+	// Char select
+	constexpr float kSpeedLevels[] = { 2400.f, 1800.f, 1400.f, 1100.f };
+	constexpr int kDefaultSpeedIndex = 1; // lv2
+	constexpr float kPreviewStartMs = 8000.f;
+	constexpr float kPreviewDurationMs = 15'000.f;
+	constexpr float kPreviewFadeInDuration = 1.f;
+	constexpr float kPreviewFadeOutDuration = 1.f;
+
 	// Gameplay
 	constexpr uint8_t kLaneCount = 4;
 	constexpr float kApproachTimeMs = 1600.f;

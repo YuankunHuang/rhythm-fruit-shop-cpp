@@ -5,6 +5,7 @@
 #include "GameConfig.h"
 #include <algorithm>
 #include <string>
+#include <cmath>
 
 namespace rfs {
 
@@ -19,8 +20,20 @@ namespace rfs {
 
 	}
 
-	ResultScreen::ResultScreen(GameContext ctx, GameResult result)
-		: ctx_(ctx), result_(result) {}
+	namespace {
+		void DrawCoverFill(IRenderer& r, int handle, float win_w, float win_h, float alpha = 1.f) {
+			if (handle < 0) return;
+			float tw = win_w, th = win_h;
+			r.GetTextureSize(handle, tw, th);
+			if (tw <= 0.f || th <= 0.f) return;
+			float scale = std::max(win_w / tw, win_h / th);
+			float dw = tw * scale, dh = th * scale;
+			r.SubmitSprite((win_w - dw) * 0.5f, (win_h - dh) * 0.5f, dw, dh, handle, alpha);
+		}
+	}
+
+	ResultScreen::ResultScreen(GameContext ctx, GameResult result, std::string cover_path)
+		: ctx_(ctx), result_(result), cover_path_(std::move(cover_path)) {}
 
 	void ResultScreen::Update(const FrameContext& ctx) {
 		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
@@ -28,6 +41,11 @@ namespace rfs {
 
 	void ResultScreen::Render() {
 		const auto& ui = ui_;
+
+		// Cover background
+		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
+		DrawCoverFill(ctx_.renderer, cover_handle, ui.win_w, ui.win_h);
+		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
 
 		const float panel_w = std::min(ui.win_w * 0.55f, 480.f);
 		const float panel_h = ui.win_h * 0.72f;
@@ -66,7 +84,7 @@ namespace rfs {
 
 	void ResultScreen::HandleInput(const InputEvent& evt) {
 		if (!evt.pressed) return;
-		if (evt.action == InputAction::Restart) {
+		if (evt.action == InputAction::Enter) {
 			ctx_.ui.GoBack();
 		}
 	}
