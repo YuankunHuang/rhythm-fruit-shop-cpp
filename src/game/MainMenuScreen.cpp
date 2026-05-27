@@ -12,19 +12,12 @@ namespace rfs {
 	}
 
 	void MainMenuScreen::OnResume() {
-		if (!ctx_.bgm.IsPlaying()) {
-			StartBgm();
-		}
+		StartBgm();
 	}
 
 	void MainMenuScreen::StartBgm() {
-		if (!bgm_loaded_) {
-			bgm_loaded_ = ctx_.bgm.Load(kBgmPath);
-			if (bgm_loaded_) {
-				ctx_.bgm.SetLooping(true);
-			}
-		}
-		if (bgm_loaded_ && !ctx_.bgm.IsPlaying()) {
+		if (ctx_.bgm.Load(kBgmPath)) {
+			ctx_.bgm.SetLooping(true);
 			ctx_.bgm.Play();
 		}
 	}
@@ -50,10 +43,10 @@ namespace rfs {
 
 	void MainMenuScreen::HandleInput(const InputEvent& evt) {
 		if (!evt.pressed) return;
-		if (evt.action == InputAction::Restart) {
+		if (evt.action == InputAction::Enter) {
 			ctx_.ui.NavigateTo(std::make_unique<ChartSelectScreen>(ctx_));
 		}
-		else if (evt.action == InputAction::Pause) {
+		else if (evt.action == InputAction::Escape) {
 			ctx_.window.Close();
 		}
 	}

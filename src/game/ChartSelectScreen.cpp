@@ -3,6 +3,7 @@
 #include "GameColors.h"
 #include "GameConfig.h"
 #include "../rhythm/SongDisplay.h"
+#include "../platform/IRenderer.h"
 #include <string>
 #include <algorithm>
 
@@ -31,20 +32,18 @@ namespace rfs {
 		else {
 			catalog_ok_ = true;
 		}
+		fallback_handle_ = ctx_.renderer.LoadTexture("assets/covers/cover-fallback.png");
+		cover_handle_ = fallback_handle_;
 	}
 
 	void ChartSelectScreen::OnEnter() {
-		// BGM should already be playing from MainMenuScreen; resume if paused.
-		if (!ctx_.bgm.IsPlaying()) {
-			ctx_.bgm.Resume();
-		}
+		StartPreviewForCurrentSong();
 	}
 
 	void ChartSelectScreen::OnResume() {
-		// Returning from a song — restart BGM playback.
-		if (!ctx_.bgm.IsPlaying()) {
-			ctx_.bgm.Resume();
-		}
+		// Stop whatever was playing and restart the preview state machine.
+		// With sound-level Pause/Resume the engine stays alive; no Resume() needed here.
+		StartPreviewForCurrentSong();
 	}
 
 	void ChartSelectScreen::OnPause() {
@@ -54,11 +53,98 @@ namespace rfs {
 
 	void ChartSelectScreen::Update(const FrameContext& ctx) {
 		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
+
+		// Adopt async cover once ready, trigger crossfade
+		if (cover_pending_handle_ >= 0 && ctx_.renderer.IsTextureReady(cover_pending_handle_)) {
+			float tw, th;
+			bool valid = ctx_.renderer.GetTextureSize(cover_pending_handle_, tw, th) && tw > 0 && th > 0;
+			int new_handle = valid ? cover_pending_handle_ : fallback_handle_;
+			if (new_handle != cover_handle_) {
+				old_cover_handle_ = cover_handle_;
+				cover_handle_ = new_handle;
+				crossfade_t_ = 0.f;
+			}
+			cover_pending_handle_ = -2;
+		}
+
+		crossfade_t_ = std::min(1.f, crossfade_t_ + ctx.delta_time * kCrossfadeSpeed);
+
+		preview_timer_ms_ += ctx.delta_time * 1000.f;
+
+		switch (preview_state_) {
+		case PreviewState::Idle:
+			preview_timer_ms_ = 0.f;
+			preview_vol_ = 0.f;
+			{
+				const auto& song = catalog_.Songs()[selected_song_];
+				ctx_.bgm.Stop();
+				ctx_.bgm.SetLooping(false);
+				ctx_.bgm.SetVolume(0.f);
+				ctx_.bgm.LoadAsync(song.audio_path);  // non-blocking
+			}
+			preview_state_ = PreviewState::Loading;
+			break;
+
+		case PreviewState::Loading:
+			if (ctx_.bgm.IsAudioReady()) {
+				ctx_.bgm.SetVolume(0.f);
+				ctx_.bgm.Seek(GameConfig::kPreviewStartMs);
+				ctx_.bgm.Play();
+				preview_vol_ = 0.f;
+				preview_state_ = PreviewState::FadeIn;
+				preview_timer_ms_ = 0.f;
+			}
+			break;
+
+		case PreviewState::FadeIn:
+			preview_vol_ = std::min(1.f, preview_timer_ms_ / GameConfig::kPreviewFadeInDuration);
+			ctx_.bgm.SetVolume(preview_vol_);
+			if (preview_timer_ms_ >= GameConfig::kPreviewFadeInDuration) {
+				preview_state_ = PreviewState::Playing;
+				preview_timer_ms_ = 0.f;
+			}
+			break;
+		case PreviewState::FadeOut:
+			preview_vol_ = std::max(0.f, 1.f - preview_timer_ms_ / GameConfig::kPreviewFadeOutDuration);
+			ctx_.bgm.SetVolume(preview_vol_);
+			if (preview_timer_ms_ >= GameConfig::kPreviewFadeOutDuration) {
+				ctx_.bgm.Stop();
+				preview_state_ = PreviewState::Idle;
+			}
+			break;
+		case PreviewState::Playing:
+			if (preview_timer_ms_ >= GameConfig::kPreviewDurationMs) {
+				preview_state_ = PreviewState::FadeOut;
+				preview_timer_ms_ = 0.f;
+			}
+			break;
+		}
+	}
+
+	namespace {
+		void DrawCoverFill(IRenderer& r, int handle, float win_w, float win_h, float alpha) {
+			if (handle < 0) return;
+			float tw = win_w, th = win_h;
+			r.GetTextureSize(handle, tw, th);
+			if (tw <= 0.f || th <= 0.f) return;
+			float scale = std::max(win_w / tw, win_h / th);
+			float dw = tw * scale, dh = th * scale;
+			r.SubmitSprite((win_w - dw) * 0.5f, (win_h - dh) * 0.5f, dw, dh, handle, alpha);
+		}
 	}
 
 	void ChartSelectScreen::Render() {
 		const auto& ui = ui_;
 		const float cx = ui.content_center_x;
+
+		// Full-screen cover background with crossfade
+		if (crossfade_t_ < 1.f && old_cover_handle_ >= 0) {
+			DrawCoverFill(ctx_.renderer, old_cover_handle_, ui.win_w, ui.win_h, 1.f);
+			DrawCoverFill(ctx_.renderer, cover_handle_, ui.win_w, ui.win_h, crossfade_t_);
+		} else {
+			DrawCoverFill(ctx_.renderer, cover_handle_, ui.win_w, ui.win_h, 1.f);
+		}
+		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
 
 		// Title bar
 		ctx_.renderer.SubmitText({
@@ -112,7 +198,7 @@ namespace rfs {
 			if (is_selected) {
 				// Highlight box
 				ctx_.renderer.SubmitQuad({
-					list_left - ui.font_body * 0.5f, y - row_h * 0.35f,
+					list_left - ui.font_body * 0.5f, y - row_h * 0.45f,
 					list_right - list_left + ui.font_body,
 					row_h * 0.9f,
 					GameColors::kPanelBg });
@@ -126,40 +212,80 @@ namespace rfs {
 				DisplaySongTitle(songs[song_idx]), color });
 		}
 
-		// Difficulty tabs for selected song
-		if (selected_song_ < song_count) {
-			const auto& song = songs[selected_song_];
-			const int diff_count = static_cast<int>(song.difficulties.size());
-			const float diff_y = ui.content_bottom - ui.font_body * 3.5f;
-			const float tab_w = ui.font_body * 5.f;
-			const float tabs_total = tab_w * diff_count;
-			float tab_x = cx - tabs_total * 0.5f;
+	// Difficulty tabs for selected song
+	if (selected_song_ < song_count) {
+		const auto& song = songs[selected_song_];
+		const int diff_count = static_cast<int>(song.difficulties.size());
+		const float diff_y = ui.content_bottom - ui.font_caption * 5.5f;
+		const float tab_w = ui.font_body * 5.f;
+		const float tabs_total = tab_w * diff_count;
+		float tab_x = cx - tabs_total * 0.5f;
 
-			for (int d = 0; d < diff_count; ++d) {
-				bool is_active = (d == selected_diff_);
-				std::string label(DiffDisplayName(song.difficulties[d]));
-				uint32_t color = is_active ? GameColors::kJudgeLine : GameColors::kTextGray;
-				if (is_active) {
-					ctx_.renderer.SubmitQuad({
-						tab_x, diff_y - ui.font_body * 0.6f,
-						tab_w - ui.font_body * 0.3f,
-						ui.font_body * 1.4f,
-						GameColors::kPanelBg });
-				}
-				ctx_.renderer.SubmitText({
-					tab_x + tab_w * 0.5f, diff_y,
-					Anchor::Center, TextStyle::Body,
-					label, color });
-				tab_x += tab_w;
+		for (int d = 0; d < diff_count; ++d) {
+			bool is_active = (d == selected_diff_);
+			std::string label(DiffDisplayName(song.difficulties[d]));
+			uint32_t color = is_active ? GameColors::kJudgeLine : GameColors::kTextGray;
+			if (is_active) {
+				const float quad_w = tab_w - ui.font_body * 0.3f;
+				ctx_.renderer.SubmitQuad({
+					tab_x + (tab_w - quad_w) * 0.5f,
+					diff_y - ui.font_body * 0.6f,
+					quad_w,
+					ui.font_body * 1.4f,
+					GameColors::kPanelBg });
 			}
+			ctx_.renderer.SubmitText({
+				tab_x + tab_w * 0.5f, diff_y,
+				Anchor::Center, TextStyle::Body,
+				label, color });
+			tab_x += tab_w;
 		}
+	}
 
-		// Hint bar
+	// Speed: "Speed" label + 1/2/3/4 tabs grouped and centered together
+	{
+		static const char* kSpeedLabels[] = { "1", "2", "3", "4" };
+		const float speed_y = ui.content_bottom - ui.font_caption * 2.5f;
+
+		const int speed_count = std::size(GameConfig::kSpeedLevels);
+		const float tab_w = ui.font_body * 2.f;
+		const float label_w = ctx_.renderer.MeasureTextWidth("Speed ", TextStyle::Caption);
+		const float group_total = label_w + tab_w * speed_count;
+		float group_x = cx - group_total * 0.5f;
+
 		ctx_.renderer.SubmitText({
-			cx, ui.content_bottom,
-			Anchor::BottomCenter, TextStyle::Caption,
-			"ENTER Play    Up/Down Song    Left/Right Difficulty    ESC Back",
-			GameColors::kTextHint });
+			group_x, speed_y,
+			Anchor::CenterLeft, TextStyle::Caption,
+			"Speed", GameColors::kTextGray });
+
+		float tab_x = group_x + label_w;
+		for (int i = 0; i < speed_count; ++i) {
+			bool is_active = (i == selected_speed_idx_);
+			uint32_t color = is_active ? GameColors::kJudgeLine : GameColors::kTextGray;
+			if (is_active) {
+				const float quad_w = tab_w - ui.font_body * 0.3f;
+				ctx_.renderer.SubmitQuad({
+					tab_x + (tab_w - quad_w) * 0.5f,
+					speed_y - ui.font_body * 0.6f,
+					quad_w,
+					ui.font_body * 1.4f,
+					GameColors::kPanelBg });
+			}
+			ctx_.renderer.SubmitText({
+				tab_x + tab_w * 0.5f, speed_y,
+				Anchor::Center, TextStyle::Body,
+				kSpeedLabels[i], color });
+			tab_x += tab_w;
+		}
+	}
+
+	// Hint bar
+	ctx_.renderer.SubmitText({
+		cx, ui.content_bottom,
+		Anchor::BottomCenter, TextStyle::Caption,
+		"ENTER Play    Up/Down Song    Left/Right Difficulty    ESC Back",
+		GameColors::kTextHint });
+
 	}
 
 	void ChartSelectScreen::HandleInput(const InputEvent& evt) {
@@ -174,6 +300,7 @@ namespace rfs {
 				selected_song_ = (selected_song_ - 1 + song_count) % song_count;
 				selected_diff_ = 0;
 			}
+			StartPreviewForCurrentSong();
 			break;
 
 		case InputAction::NavDown:
@@ -181,6 +308,7 @@ namespace rfs {
 				selected_song_ = (selected_song_ + 1) % song_count;
 				selected_diff_ = 0;
 			}
+			StartPreviewForCurrentSong();
 			break;
 
 		case InputAction::NavLeft:
@@ -201,14 +329,30 @@ namespace rfs {
 			}
 			break;
 
-		case InputAction::Restart:
+		case InputAction::Enter:
 			if (selected_song_ < song_count) {
 				ConfirmSelection();
 			}
 			break;
 
-		case InputAction::Pause:
+		case InputAction::Escape:
 			ctx_.ui.GoBack();
+			break;
+
+		case InputAction::Level1:
+			selected_speed_idx_ = 0;
+			break;
+
+		case InputAction::Level2:
+			selected_speed_idx_ = 1;
+			break;
+
+		case InputAction::Level3:
+			selected_speed_idx_ = 2;
+			break;
+
+		case InputAction::Level4:
+			selected_speed_idx_ = 3;
 			break;
 
 		default:
@@ -229,7 +373,30 @@ namespace rfs {
 			ctx_,
 			song.chart_path,
 			difficulty,
-			song.audio_path));
+			song.audio_path,
+			song.cover_path));
 	}
 
+	void ChartSelectScreen::StartPreviewForCurrentSong() {
+		ctx_.bgm.Stop();
+		preview_state_ = PreviewState::Idle;
+		preview_timer_ms_ = 0.f;
+
+		const auto& songs = catalog_.Songs();
+		if (songs.empty()) return;
+		const std::string& new_cover = songs[selected_song_].cover_path;
+		if (new_cover == cover_path_loaded_) return;
+
+		cover_path_loaded_ = new_cover;
+		if (new_cover.empty()) {
+			// No cover for this song — use fallback immediately
+			cover_pending_handle_ = -2;
+			cover_handle_ = fallback_handle_;
+		} else {
+			// Start async load; keep showing current cover until ready
+			cover_pending_handle_ = ctx_.renderer.LoadTextureAsync(new_cover);
+			// If already cached, IsTextureReady returns true immediately;
+			// Update() will adopt it on the very next frame.
+		}
+	}
 }

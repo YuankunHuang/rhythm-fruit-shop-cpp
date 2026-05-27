@@ -3,14 +3,27 @@
 #include "PauseScreen.h"
 #include "GameColors.h"
 #include "GameRules.h"
+#include "../platform/IRenderer.h"
 #include <memory>
 #include <algorithm>
 #include <string>
 
 namespace rfs {
 
-	GameplayScreen::GameplayScreen(GameContext ctx, FrozenChart chart)
-		: ctx_(ctx), chart_(std::move(chart))
+	namespace {
+		void DrawCoverFill(IRenderer& r, int handle, float win_w, float win_h, float alpha = 1.f) {
+			if (handle < 0) return;
+			float tw = win_w, th = win_h;
+			r.GetTextureSize(handle, tw, th);
+			if (tw <= 0.f || th <= 0.f) return;
+			float scale = std::max(win_w / tw, win_h / th);
+			float dw = tw * scale, dh = th * scale;
+			r.SubmitSprite((win_w - dw) * 0.5f, (win_h - dh) * 0.5f, dw, dh, handle, alpha);
+		}
+	}
+
+	GameplayScreen::GameplayScreen(GameContext ctx, FrozenChart chart, std::string cover_path)
+		: ctx_(ctx), chart_(std::move(chart)), cover_path_(std::move(cover_path))
 	{
 		note_hit_.assign(chart_.Notes().size(), 0);
 	}
@@ -50,7 +63,7 @@ namespace rfs {
 			end_timer_ms_ -= ctx.delta_time * 1000.f;
 			if (end_timer_ms_ <= 0.f && !result_pushed_) {
 				result_pushed_ = true;
-				ctx_.ui.ReplaceTop(std::make_unique<ResultScreen>(ctx_, BuildResult()));
+				ctx_.ui.ReplaceTop(std::make_unique<ResultScreen>(ctx_, BuildResult(), cover_path_));
 			}
 		}
 	}
@@ -58,6 +71,11 @@ namespace rfs {
 	void GameplayScreen::Render() {
 		const auto& L = layout_;
 		const uint8_t lane_count = LaneCount();
+
+		// Cover background (lighter overlay so notes stay visible)
+		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
+		DrawCoverFill(ctx_.renderer, cover_handle, ui_.win_w, ui_.win_h);
+		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui_.win_w, ui_.win_h, 0x00000088 });
 
 		// Lane background strips
 		for (uint8_t i = 0; i < lane_count; ++i) {
@@ -123,7 +141,7 @@ namespace rfs {
 		if (!evt.pressed) return;
 		if (song_ending_) return;  // no input after song ends
 
-		if (evt.action == InputAction::Pause) {
+		if (evt.action == InputAction::Escape) {
 			ctx_.ui.NavigateTo(std::make_unique<PauseScreen>(ctx_));
 			return;
 		}

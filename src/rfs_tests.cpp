@@ -1,4 +1,4 @@
-#include "rhythm/ChartLoader.h"
+﻿#include "rhythm/ChartLoader.h"
 #include "rhythm/ChartCatalog.h"
 #include "rhythm/AudioPathResolver.h"
 #include "rhythm/SongDisplay.h"
@@ -21,7 +21,7 @@ int main() {
     {
         rfs::ChartLoader loader;
         rfs::LoadError err{};
-        auto chart = loader.Load("assets/charts/test_fixture.rfs.json", "easy", err);
+        auto chart = loader.Load("assets/charts/test-fixture.rfs.json", "easy", err);
         EXPECT(chart.has_value());
         if (chart) {
             EXPECT(chart->Notes().size() == 4);
@@ -38,7 +38,7 @@ int main() {
     {
         rfs::ChartLoader loader;
         rfs::LoadError err{};
-        auto chart = loader.Load("assets/charts/test_fixture.rfs.json", "expert", err);
+        auto chart = loader.Load("assets/charts/test-fixture.rfs.json", "expert", err);
         EXPECT(chart.has_value());
         if (chart) {
             EXPECT(chart->Notes().size() == 6);
@@ -58,7 +58,7 @@ int main() {
     {
         rfs::ChartLoader loader;
         rfs::LoadError err{};
-        auto chart = loader.Load("assets/charts/test_fixture.rfs.json", "hard", err);
+        auto chart = loader.Load("assets/charts/test-fixture.rfs.json", "hard", err);
         EXPECT(!chart.has_value());
         EXPECT(err.code == "diff_not_found");
     }
@@ -128,3 +128,4 @@ int main() {
     std::cout << "All tests passed.\n";
     return 0;
 }
+

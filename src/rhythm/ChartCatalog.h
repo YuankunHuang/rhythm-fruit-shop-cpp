@@ -11,6 +11,7 @@ namespace rfs {
 		std::string title;
 		std::string audio_path;
 		std::string chart_path;
+		std::string cover_path;
 		std::vector<std::string> difficulties;
 	};
 

@@ -52,10 +52,10 @@ namespace rfs {
 	void PauseScreen::HandleInput(const InputEvent& evt) {
 		if (!evt.pressed) return;
 		switch (evt.action) {
-		case InputAction::Pause:
+		case InputAction::Escape:
 			ctx_.ui.GoBack();
 			break;
-		case InputAction::Restart:
+		case InputAction::Enter:
 			ctx_.ui.GoBackToRoot();
 			break;
 		default:

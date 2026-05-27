@@ -8,12 +8,13 @@
 #include "GameConfig.h"
 #include "GameResult.h"
 #include "GameRules.h"
+#include <string>
 #include <vector>
 
 namespace rfs {
 	class GameplayScreen : public IScreen {
 	public:
-		explicit GameplayScreen(GameContext ctx, FrozenChart chart);
+		GameplayScreen(GameContext ctx, FrozenChart chart, std::string cover_path);
 
 		void OnPause() override { paused_ = true; }
 		void OnResume() override { paused_ = false; }
@@ -27,6 +28,7 @@ namespace rfs {
 
 		GameContext ctx_;
 		FrozenChart chart_;
+		std::string cover_path_;
 		float song_time_ms_ = 0.f;
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};

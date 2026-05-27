@@ -16,14 +16,18 @@ namespace {
 		case sf::Keyboard::F: return InputAction::Lane1;
 		case sf::Keyboard::J: return InputAction::Lane2;
 		case sf::Keyboard::K: return InputAction::Lane3;
-		case sf::Keyboard::Escape: return InputAction::Pause;
-		case sf::Keyboard::Enter: return InputAction::Restart;
+		case sf::Keyboard::Escape: return InputAction::Escape;
+		case sf::Keyboard::Enter: return InputAction::Enter;
 		case sf::Keyboard::F1: return InputAction::ToggleDebug;
 		case sf::Keyboard::F2: return InputAction::CycleCalibration;
 		case sf::Keyboard::Up: return InputAction::NavUp;
 		case sf::Keyboard::Down: return InputAction::NavDown;
 		case sf::Keyboard::Left: return InputAction::NavLeft;
 		case sf::Keyboard::Right: return InputAction::NavRight;
+		case sf::Keyboard::Num1: return InputAction::Level1;
+		case sf::Keyboard::Num2: return InputAction::Level2;
+		case sf::Keyboard::Num3: return InputAction::Level3;
+		case sf::Keyboard::Num4: return InputAction::Level4;
 		default:
 			return std::nullopt;
 		}

@@ -13,7 +13,7 @@ namespace rfs {
 
 	class LoadingScreen : public IScreen {
 	public:
-		LoadingScreen(GameContext ctx, std::string chart_path, std::string difficulty, std::string audio_path);
+		LoadingScreen(GameContext ctx, std::string chart_path, std::string difficulty, std::string audio_path, std::string cover_path);
 
 		bool IsReady() const noexcept override { return ready_; }
 
@@ -36,6 +36,7 @@ namespace rfs {
 
 		std::string audio_path_;
 		std::string chart_path_;
+		std::string cover_path_;
 
 		bool ready_ = false;
 		bool load_ok_ = false;

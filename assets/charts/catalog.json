@@ -5,6 +5,7 @@
       "title": "Ark Light",
       "audio": "assets/audio/tracks/ark-light.mp3",
       "chart": "assets/charts/ark-light.rfs.json",
+      "cover": "assets/covers/ark-light/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -17,6 +18,7 @@
       "title": "Asura",
       "audio": "assets/audio/tracks/asura.mp3",
       "chart": "assets/charts/asura.rfs.json",
+      "cover": "assets/covers/asura/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -29,6 +31,7 @@
       "title": "Beethoven",
       "audio": "assets/audio/tracks/beethoven.mp3",
       "chart": "assets/charts/beethoven.rfs.json",
+      "cover": "assets/covers/beethoven/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -39,8 +42,9 @@
     {
       "id": "citrus-fizz",
       "title": "Citrus Fizz",
-      "audio": "assets/audio/service/citrus_fizz.mp3",
+      "audio": "assets/audio/service/citrus-fizz.mp3",
       "chart": "assets/charts/citrus-fizz.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -50,6 +54,7 @@
       "title": "Drama",
       "audio": "assets/audio/tracks/drama.mp3",
       "chart": "assets/charts/drama.rfs.json",
+      "cover": "assets/covers/drama/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -62,6 +67,7 @@
       "title": "Faraway",
       "audio": "assets/audio/tracks/faraway.mp3",
       "chart": "assets/charts/faraway.rfs.json",
+      "cover": "assets/covers/faraway/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -74,6 +80,7 @@
       "title": "Felis",
       "audio": "assets/audio/tracks/felis.mp3",
       "chart": "assets/charts/felis.rfs.json",
+      "cover": "assets/covers/felis/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -86,6 +93,7 @@
       "title": "First Choice",
       "audio": "assets/audio/tracks/first-choice.mp3",
       "chart": "assets/charts/first-choice.rfs.json",
+      "cover": "assets/covers/first-choice/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -96,8 +104,9 @@
     {
       "id": "fresh-orange-juice",
       "title": "Fresh Orange Juice",
-      "audio": "assets/audio/service/fresh_orange_juice.mp3",
+      "audio": "assets/audio/service/fresh-orange-juice.mp3",
       "chart": "assets/charts/fresh-orange-juice.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -105,8 +114,9 @@
     {
       "id": "fruit-cup-quiet",
       "title": "Fruit Cup Quiet",
-      "audio": "assets/audio/service/fruit_cup_quiet.mp3",
+      "audio": "assets/audio/service/fruit-cup-quiet.mp3",
       "chart": "assets/charts/fruit-cup-quiet.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -114,8 +124,9 @@
     {
       "id": "fruit-cup",
       "title": "Fruit Cup",
-      "audio": "assets/audio/service/fruit_cup.mp3",
+      "audio": "assets/audio/service/fruit-cup.mp3",
       "chart": "assets/charts/fruit-cup.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -123,8 +134,9 @@
     {
       "id": "fruit-platter",
       "title": "Fruit Platter",
-      "audio": "assets/audio/service/fruit_platter.mp3",
+      "audio": "assets/audio/service/fruit-platter.mp3",
       "chart": "assets/charts/fruit-platter.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -134,6 +146,7 @@
       "title": "Grafiore",
       "audio": "assets/audio/tracks/grafiore.mp3",
       "chart": "assets/charts/grafiore.rfs.json",
+      "cover": "assets/covers/grafiore/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -144,8 +157,9 @@
     {
       "id": "grape-smoothie-afterglow",
       "title": "Grape Smoothie Afterglow",
-      "audio": "assets/audio/service/grape_smoothie_afterglow.mp3",
+      "audio": "assets/audio/service/grape-smoothie-afterglow.mp3",
       "chart": "assets/charts/grape-smoothie-afterglow.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -153,8 +167,9 @@
     {
       "id": "grape-smoothie-smolder",
       "title": "Grape Smoothie Smolder",
-      "audio": "assets/audio/service/grape_smoothie_smolder.mp3",
+      "audio": "assets/audio/service/grape-smoothie-smolder.mp3",
       "chart": "assets/charts/grape-smoothie-smolder.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -162,17 +177,19 @@
     {
       "id": "grape-smoothie-still",
       "title": "Grape Smoothie Still",
-      "audio": "assets/audio/service/grape_smoothie_still.mp3",
+      "audio": "assets/audio/service/grape-smoothie-still.mp3",
       "chart": "assets/charts/grape-smoothie-still.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
     },
     {
-      "id": "grypsy-tronic",
-      "title": "Grypsy Tronic",
-      "audio": "assets/audio/tracks/grypsy-tronic.mp3",
-      "chart": "assets/charts/grypsy-tronic.rfs.json",
+      "id": "gypsy-tronic",
+      "title": "Gypsy Tronic",
+      "audio": "assets/audio/tracks/gypsy-tronic.mp3",
+      "chart": "assets/charts/gypsy-tronic.rfs.json",
+      "cover": "assets/covers/gypsy-tronic/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -183,17 +200,19 @@
     {
       "id": "hot-orange-juice",
       "title": "Hot Orange Juice",
-      "audio": "assets/audio/service/hot_orange_juice.mp3",
+      "audio": "assets/audio/service/hot-orange-juice.mp3",
       "chart": "assets/charts/hot-orange-juice.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
     },
     {
-      "id": "ineffable",
-      "title": "Ineffable",
-      "audio": "assets/audio/tracks/ineffable.mp3",
-      "chart": "assets/charts/ineffable.rfs.json",
+      "id": "ineffabilis",
+      "title": "Ineffabilis",
+      "audio": "assets/audio/tracks/ineffabilis.mp3",
+      "chart": "assets/charts/ineffabilis.rfs.json",
+      "cover": "assets/covers/ineffabilis/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -204,8 +223,9 @@
     {
       "id": "lemon-water-light",
       "title": "Lemon Water Light",
-      "audio": "assets/audio/service/lemon_water_light.mp3",
+      "audio": "assets/audio/service/lemon-water-light.mp3",
       "chart": "assets/charts/lemon-water-light.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -213,8 +233,9 @@
     {
       "id": "lemon-water",
       "title": "Lemon Water",
-      "audio": "assets/audio/service/lemon_water.mp3",
+      "audio": "assets/audio/service/lemon-water.mp3",
       "chart": "assets/charts/lemon-water.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -222,8 +243,9 @@
     {
       "id": "lets-drive",
       "title": "Lets Drive",
-      "audio": "assets/audio/tracks/lets_drive.mp3",
+      "audio": "assets/audio/tracks/lets-drive.mp3",
       "chart": "assets/charts/lets-drive.rfs.json",
+      "cover": "assets/covers/lets-drive/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -236,6 +258,7 @@
       "title": "Lunatic Sky",
       "audio": "assets/audio/tracks/lunatic-sky.mp3",
       "chart": "assets/charts/lunatic-sky.rfs.json",
+      "cover": "assets/covers/lunatic-sky/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -246,8 +269,9 @@
     {
       "id": "lychee-juice",
       "title": "Lychee Juice",
-      "audio": "assets/audio/service/lychee_juice.mp3",
+      "audio": "assets/audio/service/lychee-juice.mp3",
       "chart": "assets/charts/lychee-juice.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -257,6 +281,7 @@
       "title": "Maidens Capriccio",
       "audio": "assets/audio/tracks/maidens-capriccio.mp3",
       "chart": "assets/charts/maidens-capriccio.rfs.json",
+      "cover": "assets/covers/maidens-capriccio/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -269,6 +294,7 @@
       "title": "Masquerade",
       "audio": "assets/audio/tracks/masquerade.mp3",
       "chart": "assets/charts/masquerade.rfs.json",
+      "cover": "assets/covers/masquerade/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -281,6 +307,7 @@
       "title": "Megaburn",
       "audio": "assets/audio/tracks/megaburn.mp3",
       "chart": "assets/charts/megaburn.rfs.json",
+      "cover": "assets/covers/megaburn/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -293,6 +320,7 @@
       "title": "Nb Blast",
       "audio": "assets/audio/tracks/nb-blast.mp3",
       "chart": "assets/charts/nb-blast.rfs.json",
+      "cover": "assets/covers/nb-blast/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -305,6 +333,7 @@
       "title": "Necro Fantasy",
       "audio": "assets/audio/tracks/necro-fantasy.mp3",
       "chart": "assets/charts/necro-fantasy.rfs.json",
+      "cover": "assets/covers/necro-fantasy/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -317,6 +346,7 @@
       "title": "Night Of Fire",
       "audio": "assets/audio/tracks/night-of-fire.mp3",
       "chart": "assets/charts/night-of-fire.rfs.json",
+      "cover": "assets/covers/night-of-fire/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -329,6 +359,7 @@
       "title": "Open The Fruit Stand!",
       "audio": "assets/audio/tracks/open-the-fruit-stand!.mp3",
       "chart": "assets/charts/open-the-fruit-stand!.rfs.json",
+      "cover": "assets/covers/open-the-fruit-stand!/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -341,6 +372,7 @@
       "title": "Please",
       "audio": "assets/audio/tracks/please.mp3",
       "chart": "assets/charts/please.rfs.json",
+      "cover": "assets/covers/please/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -353,6 +385,7 @@
       "title": "Purple Passion",
       "audio": "assets/audio/tracks/purple-passion.mp3",
       "chart": "assets/charts/purple-passion.rfs.json",
+      "cover": "assets/covers/purple-passion/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -365,6 +398,7 @@
       "title": "Qua Vadis",
       "audio": "assets/audio/tracks/qua-vadis.mp3",
       "chart": "assets/charts/qua-vadis.rfs.json",
+      "cover": "assets/covers/qua-vadis/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -377,6 +411,7 @@
       "title": "Seeker",
       "audio": "assets/audio/tracks/seeker.mp3",
       "chart": "assets/charts/seeker.rfs.json",
+      "cover": "assets/covers/seeker/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -388,7 +423,8 @@
       "id": "test-fixture",
       "title": "Test Fixture",
       "audio": "",
-      "chart": "assets/charts/test_fixture.rfs.json",
+      "chart": "assets/charts/test-fixture.rfs.json",
+      "cover": "",
       "difficulties": [
         "easy",
         "expert"
@@ -399,6 +435,7 @@
       "title": "Toy War",
       "audio": "assets/audio/tracks/toy-war.mp3",
       "chart": "assets/charts/toy-war.rfs.json",
+      "cover": "assets/covers/toy-war/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -411,6 +448,7 @@
       "title": "Tutorial",
       "audio": "assets/audio/tracks/tutorial.mp3",
       "chart": "assets/charts/tutorial.rfs.json",
+      "cover": "assets/covers/tutorial/cover.png",
       "difficulties": [
         "easy"
       ]
@@ -420,6 +458,7 @@
       "title": "Unwelcome School",
       "audio": "assets/audio/tracks/unwelcome-school.mp3",
       "chart": "assets/charts/unwelcome-school.rfs.json",
+      "cover": "assets/covers/unwelcome-school/cover.png",
       "difficulties": [
         "easy",
         "normal",
@@ -430,8 +469,9 @@
     {
       "id": "warm-lemon-water",
       "title": "Warm Lemon Water",
-      "audio": "assets/audio/service/warm_lemon_water.mp3",
+      "audio": "assets/audio/service/warm-lemon-water.mp3",
       "chart": "assets/charts/warm-lemon-water.rfs.json",
+      "cover": "",
       "difficulties": [
         "service"
       ]
@@ -441,6 +481,7 @@
       "title": "Wings Of Silence",
       "audio": "assets/audio/tracks/wings-of-silence.mp3",
       "chart": "assets/charts/wings-of-silence.rfs.json",
+      "cover": "assets/covers/wings-of-silence/cover.png",
       "difficulties": [
         "easy",
         "normal",

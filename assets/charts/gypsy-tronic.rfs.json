@@ -1,7 +1,7 @@
 {
   "schema": "rfs-cpp-v1",
-  "id": "grypsy-tronic",
-  "title": "Grypsy Tronic",
+  "id": "gypsy-tronic",
+  "title": "Gypsy Tronic",
   "approach_time_ms": 1600,
   "difficulties": {
     "easy": [

@@ -4,6 +4,8 @@
 #include "GameConfig.h"
 #include "../rhythm/AudioPathResolver.h"
 #include "../rhythm/SongDisplay.h"
+#include "../platform/IRenderer.h"
+#include <algorithm>
 #include <chrono>
 
 namespace rfs {
@@ -30,14 +32,28 @@ namespace rfs {
 		return r;
 	}
 
+	namespace {
+		void DrawCoverFill(IRenderer& r, int handle, float win_w, float win_h, float alpha = 1.f) {
+			if (handle < 0) return;
+			float tw = win_w, th = win_h;
+			r.GetTextureSize(handle, tw, th);
+			if (tw <= 0.f || th <= 0.f) return;
+			float scale = std::max(win_w / tw, win_h / th);
+			float dw = tw * scale, dh = th * scale;
+			r.SubmitSprite((win_w - dw) * 0.5f, (win_h - dh) * 0.5f, dw, dh, handle, alpha);
+		}
+	}
+
 	LoadingScreen::LoadingScreen(
 		GameContext ctx,
 		std::string chart_path,
 		std::string difficulty,
-		std::string audio_path)
+		std::string audio_path,
+		std::string cover_path)
 		: ctx_(ctx)
 		, audio_path_(std::move(audio_path))
 		, chart_path_(chart_path)
+		, cover_path_(std::move(cover_path))
 	{
 		future_ = std::async(std::launch::async, DoLoad,
 			std::move(chart_path), std::move(difficulty));
@@ -79,6 +95,11 @@ namespace rfs {
 		const float cy = ui.content_center_y;
 		const float line_gap = ui.font_body * 1.6f;
 
+		// Cover background
+		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
+		DrawCoverFill(ctx_.renderer, cover_handle, ui.win_w, ui.win_h);
+		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
+
 		if (!ready_) {
 			static const char* kFrames[] = { "/", "-", "\\", "|" };
 			constexpr int kFrameCount = 4;
@@ -112,14 +133,14 @@ namespace rfs {
 	void LoadingScreen::HandleInput(const InputEvent& evt) {
 		if (!evt.pressed) return;
 
-		if (evt.action == InputAction::Pause) {
+		if (evt.action == InputAction::Escape) {
 			ctx_.ui.GoBack();
 			return;
 		}
 
 		if (!ready_ || !load_ok_) return;
 
-		if (evt.action == InputAction::Restart && chart_.has_value()) {
+		if (evt.action == InputAction::Enter && chart_.has_value()) {
 			const auto song_id = AudioPathResolver::SongIdFromChartPath(chart_path_);
 			const auto resolved = AudioPathResolver::Resolve(song_id, audio_path_);
 			if (!resolved) {
@@ -137,9 +158,9 @@ namespace rfs {
 				return;
 			}
 
-			ctx_.song_clock.Reset();
-			ctx_.audio.Play();
-			ctx_.ui.ReplaceTop(std::make_unique<GameplayScreen>(ctx_, std::move(*chart_)));
+		ctx_.song_clock.Reset();
+		ctx_.audio.Play();
+		ctx_.ui.ReplaceTop(std::make_unique<GameplayScreen>(ctx_, std::move(*chart_), cover_path_));
 		}
 	}
 
