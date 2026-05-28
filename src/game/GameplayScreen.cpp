@@ -43,6 +43,16 @@ namespace rfs {
 		ctx_.bgm.Stop();
 		is_in_lead_in_ = true;
 		lead_in_ms_ = -GameConfig::kGameplayLeadInMs;
+
+		TryLoadCover();
+	}
+
+	void GameplayScreen::TryLoadCover() {
+		if (cover_handle_ >= 0) return;
+		cover_handle_ = ctx_.renderer.LoadTexture(cover_path_);
+		if (cover_handle_ < 0) {
+			cover_handle_ = ctx_.renderer.LoadTexture(GameConfig::kFallbackCoverPath);
+		}
 	}
 
 	void GameplayScreen::OnPause() {
@@ -138,8 +148,17 @@ namespace rfs {
 
 	void GameplayScreen::Update(const FrameContext& ctx) {
 		layout_ = GameLayout::Compute(ctx.win_w, ctx.win_h, LaneCount());
-		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
 		ctx_.session.last_frame_duration_ms = ctx.delta_time * 1000.f;
+
+		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
+
+		if (retry_cooldown_ > 0.f) {
+			retry_cooldown_ -= ctx.delta_time * 1000.f;
+		}
+		if (cover_handle_ < 0 && retry_cooldown_ <= 0.f) {
+			TryLoadCover();
+			retry_cooldown_ = 500.f;
+		}
 
 		if (paused_) return;
 
@@ -206,8 +225,7 @@ namespace rfs {
 		const uint8_t lane_count = LaneCount();
 
 		// Cover background (lighter overlay so notes stay visible)
-		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
-		UiDraw::CoverFill(ctx_.renderer, cover_handle, ui_.win_w, ui_.win_h);
+		UiDraw::CoverFill(ctx_.renderer, cover_handle_, ui_.win_w, ui_.win_h);
 		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui_.win_w, ui_.win_h, 0x00000088 });
 
 		// Lane background strips
@@ -338,9 +356,16 @@ namespace rfs {
 	}
 
 	void GameplayScreen::HandleInput(const InputEvent& evt) {
+
 		if (!evt.pressed) return;
-		if (is_in_lead_in_) return;
-		if (is_in_outro_ || result_pushed_) return;
+
+		// debug
+		if (evt.action == InputAction::ToggleDebug && evt.pressed) {
+			ctx_.session.show_debug_overlay = !ctx_.session.show_debug_overlay;
+			return;
+		}
+
+		if (is_in_lead_in_ || is_in_outro_ || result_pushed_) return;
 
 		// exit
 		if (evt.action == InputAction::Escape) {
@@ -348,11 +373,7 @@ namespace rfs {
 			return;
 		}
 
-		// debug & calibration
-		if (evt.action == InputAction::ToggleDebug && evt.pressed) {
-			ctx_.session.show_debug_overlay = !ctx_.session.show_debug_overlay;
-			return;
-		}
+		// calibration
 		if (evt.action == InputAction::CycleCalibration && evt.pressed) {
 			static int i = 0;
 			const auto& kSteps = GameConfig::kCalibrationSteps;

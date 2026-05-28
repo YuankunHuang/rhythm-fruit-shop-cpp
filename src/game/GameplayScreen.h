@@ -50,9 +50,13 @@ namespace rfs {
 		GameContext ctx_;
 		FrozenChart chart_;
 		std::string cover_path_;
+		int cover_handle_ = -1;
+		float retry_cooldown_ = 0.f;
 		float song_time_ms_ = 0.f;
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};
+
+		void TryLoadCover();
 
 		float chart_end_ms_ = 1.f;
 		float gameplay_end_ms_ = 0.f;

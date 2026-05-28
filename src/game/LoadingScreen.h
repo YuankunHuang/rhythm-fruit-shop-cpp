@@ -16,7 +16,7 @@ namespace rfs {
 		LoadingScreen(GameContext ctx, std::string chart_path, std::string difficulty, std::string audio_path, std::string cover_path);
 
 		bool IsReady() const noexcept override { return ready_; }
-
+		void OnEnter() override;
 		void Update(const FrameContext& ctx) override;
 		void Render() override;
 		void HandleInput(const InputEvent& evt) override;
@@ -31,12 +31,16 @@ namespace rfs {
 
 		static LoadResult DoLoad(std::string path, std::string difficulty);
 
+		void TryLoadCover();
+
 		GameContext ctx_;
 		GameConfig::UiLayout ui_{};
 
 		std::string audio_path_;
 		std::string chart_path_;
 		std::string cover_path_;
+		int cover_handle_ = -1;
+		float retry_cooldown_ = 0.f;
 
 		bool ready_ = false;
 		bool load_ok_ = false;

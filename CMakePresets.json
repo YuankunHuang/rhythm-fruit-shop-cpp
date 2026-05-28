@@ -2,25 +2,24 @@
   "version": 6,
   "configurePresets": [
     {
-      "name": "x64-debug",
-      "displayName": "x64 Debug (vcpkg)",
-      "generator": "Visual Studio 18 2026",
-      "architecture": "x64",
-      "binaryDir": "${sourceDir}/out/build/x64-Debug",
+      "name": "win64-vcpkg",
+      "displayName": "Windows x64 (Ninja + vcpkg)",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/out/build/win64-vcpkg",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "x64-debug-build",
-      "configurePreset": "x64-debug",
+      "name": "win64-debug-build",
+      "configurePreset": "win64-vcpkg",
       "configuration": "Debug"
     },
     {
-      "name": "x64-release-build",
-      "configurePreset": "x64-debug",
+      "name": "win64-release-build",
+      "configurePreset": "win64-vcpkg",
       "configuration": "Release"
     }
   ]
