@@ -16,6 +16,7 @@ add_library(rfs_core STATIC
 	src/rhythm/SmoothedSongClock.cpp
 	src/rhythm/AudioPathResolver.cpp
 	src/rhythm/SongDisplay.cpp
+	src/rhythm/JudgementSystem.cpp
 )
 target_include_directories(rfs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rfs_core 
@@ -66,6 +67,7 @@ add_library(rfs_app STATIC
 	src/game/GameplayScreen.cpp
 	src/game/ResultScreen.cpp
 	src/game/PauseScreen.cpp
+	src/game/DebugOverlay.cpp
 )
 target_include_directories(rfs_app
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src

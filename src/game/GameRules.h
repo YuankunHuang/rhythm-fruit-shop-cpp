@@ -1,19 +1,10 @@
 #pragma once
 
 #include "GameResult.h"
+#include "../rhythm/JudgementSystem.h"
 #include <cstdint>
 
 namespace rfs {
-	enum class JudgeResult {
-		Perfect, Great, Good, Miss
-	};
-
-	namespace JudgeWindows {
-		constexpr int32_t kPerfect = 50; // +-50ms
-		constexpr int32_t kGreat = 100;
-		constexpr int32_t kGood = 150;
-		// greater diff -> miss
-	}
 
 	namespace Scoring {
 		inline int32_t EarnScore(JudgeResult result, int32_t combo) {

@@ -76,13 +76,13 @@ int main() {
         const auto lemon = rfs::AudioPathResolver::Resolve("lemon-water-light");
         EXPECT(lemon.has_value());
         if (lemon) {
-            EXPECT(lemon->generic_string().find("lemon_water_light") != std::string::npos);
+            EXPECT(lemon->generic_string().find("lemon-water-light") != std::string::npos);
         }
 
         const auto lets_drive = rfs::AudioPathResolver::Resolve("lets-drive");
         EXPECT(lets_drive.has_value());
         if (lets_drive) {
-            EXPECT(lets_drive->generic_string().find("lets_drive") != std::string::npos);
+            EXPECT(lets_drive->generic_string().find("lets-drive") != std::string::npos);
         }
 
         const auto drama = rfs::AudioPathResolver::Resolve("drama");

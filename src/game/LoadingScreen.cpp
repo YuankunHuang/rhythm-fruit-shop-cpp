@@ -53,10 +53,9 @@ namespace rfs {
 		: ctx_(ctx)
 		, audio_path_(std::move(audio_path))
 		, chart_path_(chart_path)
-		, cover_path_(std::move(cover_path))
+		, cover_path_(GameConfig::ResolveCoverPath(std::move(cover_path)))
 	{
-		future_ = std::async(std::launch::async, DoLoad,
-			std::move(chart_path), std::move(difficulty));
+		future_ = std::async(std::launch::async, DoLoad, std::move(chart_path), std::move(difficulty));
 	}
 
 	void LoadingScreen::Update(const FrameContext& ctx) {
@@ -118,11 +117,13 @@ namespace rfs {
 		}
 
 		const uint32_t title_color = load_ok_ ? GameColors::kTextWhite : GameColors::kTextError;
-		ctx_.renderer.SubmitText({ cx, cy - line_gap, Anchor::Center, TextStyle::Title, title_, title_color });
+		ctx_.renderer.SubmitText({ cx, cy - line_gap * 1.2f, Anchor::Center, TextStyle::Title, title_, title_color });
 		ctx_.renderer.SubmitText({ cx, cy, Anchor::Center, TextStyle::Body, detail_, GameColors::kTextGray });
 		if (load_ok_) {
-			ctx_.renderer.SubmitText({ cx, cy + line_gap, Anchor::Center, TextStyle::Caption,
+			ctx_.renderer.SubmitText({ cx, cy + line_gap * 1.2f, Anchor::Center, TextStyle::Caption,
 				"Press Enter to play", GameColors::kTextHint });
+			ctx_.renderer.SubmitText({ cx, cy + line_gap * 2, Anchor::Center, TextStyle::Caption,
+				"Press Esc to go back", GameColors::kTextHint });
 		}
 		else {
 			ctx_.renderer.SubmitText({ cx, cy + line_gap, Anchor::Center, TextStyle::Caption,

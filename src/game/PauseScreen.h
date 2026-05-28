@@ -23,5 +23,6 @@ namespace rfs {
 		GameContext ctx_;
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};
+		bool is_back_to_root_ = false;
 	};
 }

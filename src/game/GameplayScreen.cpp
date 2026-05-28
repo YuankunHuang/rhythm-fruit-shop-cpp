@@ -4,6 +4,7 @@
 #include "GameColors.h"
 #include "GameRules.h"
 #include "../platform/IRenderer.h"
+#include "DebugOverlay.h"
 #include <memory>
 #include <algorithm>
 #include <string>
@@ -25,29 +26,69 @@ namespace rfs {
 	GameplayScreen::GameplayScreen(GameContext ctx, FrozenChart chart, std::string cover_path)
 		: ctx_(ctx), chart_(std::move(chart)), cover_path_(std::move(cover_path))
 	{
-		note_hit_.assign(chart_.Notes().size(), 0);
+		snapshot_.note_resolved.assign(chart_.Notes().size(), 0);
+		snapshot_.next_idx = 0;
+	}
+
+	void GameplayScreen::OnEnter() {
+		// silent at the very beginning -> for the VIIIIIIIBE lol
+		ctx_.bgm.Stop();
+	}
+
+	void GameplayScreen::OnPause() {
+		paused_ = true;
+	}
+
+	void GameplayScreen::OnResume() {
+		paused_ = false;
+	}
+
+	void GameplayScreen::OnExit() {
+		ctx_.audio.Stop();
+		ctx_.song_clock.Reset();
+	}
+
+	void GameplayScreen::ApplyCommand(const JudgeCommand& cmd) {
+		switch (cmd.kind) {
+		case JudgeCommand::Kind::AutoMiss:
+			combo_ = 0;
+			++cnt_miss_;
+			break;
+		case JudgeCommand::Kind::TapHit:
+			++combo_;
+			switch (cmd.result) {
+			case JudgeResult::Perfect:
+				++cnt_perfect_;
+				break;
+			case JudgeResult::Great:
+				++cnt_great_;
+				break;
+			case JudgeResult::Good:
+				++cnt_good_;
+				break;
+			}
+			break;
+		}
+
+		max_combo_ = std::max(max_combo_, combo_);
+		score_ += Scoring::EarnScore(cmd.result, combo_);
+		last_judge_ = cmd.result;
+		judge_display_ms_ = GameConfig::kJudgeDisplayMs;
 	}
 
 	void GameplayScreen::Update(const FrameContext& ctx) {
 		layout_ = GameLayout::Compute(ctx.win_w, ctx.win_h, LaneCount());
 		ui_     = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
+		ctx_.session.last_frame_duration_ms = ctx.delta_time * 1000.f;
 
 		if (paused_) return;
 
 		song_time_ms_ = ctx.song_time_ms;
 
 		// Advance next_idx_: mark overdue notes as Miss
-		const auto& notes = chart_.Notes();
-		while (next_idx_ < static_cast<int>(notes.size()) &&
-			song_time_ms_ - notes[next_idx_].time_ms > JudgeWindows::kGood) {
-			if (!note_hit_[next_idx_]) {
-				note_hit_[next_idx_] = 1;
-				combo_ = 0;
-				last_judge_ = JudgeResult::Miss;
-				judge_display_ms_ = GameConfig::kJudgeDisplayMs;
-				++cnt_miss_;
-			}
-			++next_idx_;
+		const auto& cmds = JudgementSystem::AdvanceAutoMisses(chart_, snapshot_, song_time_ms_);
+		for (const auto& cmd : cmds) {
+			ApplyCommand(cmd);
 		}
 
 		if (judge_display_ms_ > 0.f) {
@@ -55,7 +96,7 @@ namespace rfs {
 		}
 
 		// Song ending: wait for all notes to be processed, then delay before result
-		if (!song_ending_ && next_idx_ >= static_cast<int>(notes.size())) {
+		if (!song_ending_ && snapshot_.next_idx >= static_cast<int>(chart_.Notes().size())) {
 			song_ending_ = true;
 			end_timer_ms_ = GameConfig::kSongEndDelayMs;
 		}
@@ -97,8 +138,8 @@ namespace rfs {
 		// Falling notes (start from next_idx_ — earlier notes are already resolved)
 		float approach = static_cast<float>(chart_.ApproachTimeMs());
 		const auto& notes = chart_.Notes();
-		for (int i = next_idx_; i < static_cast<int>(notes.size()); ++i) {
-			if (note_hit_[i]) continue;
+		for (int i = snapshot_.next_idx; i < static_cast<int>(notes.size()); ++i) {
+			if (snapshot_.note_resolved[i]) continue;
 			const auto& note = notes[i];
 			float t = static_cast<float>(note.time_ms) - song_time_ms_;
 			float norm = t / approach;
@@ -126,6 +167,7 @@ namespace rfs {
 				Anchor::Center, TextStyle::Judge, text, color });
 		}
 
+		// Score & Combo
 		const float hud_x = ui_.content_right;
 		const float hud_y_score = ui_.content_top;
 		const float hud_y_combo = hud_y_score + ui_.font_hud * 1.5f;
@@ -135,17 +177,39 @@ namespace rfs {
 			const std::string combo_line = "COMBO " + std::to_string(combo_);
 			ctx_.renderer.SubmitText({ hud_x, hud_y_combo, Anchor::TopRight, TextStyle::Hud, combo_line, GameColors::kTextGray });
 		}
+
+		// debug
+		if (ctx_.session.show_debug_overlay) {
+			RenderDebugOverlay(ctx_.renderer, ui_, ctx_.session, snapshot_, song_time_ms_, static_cast<int>(chart_.Notes().size()));
+		}
 	}
 
 	void GameplayScreen::HandleInput(const InputEvent& evt) {
 		if (!evt.pressed) return;
 		if (song_ending_) return;  // no input after song ends
 
+		// exit
 		if (evt.action == InputAction::Escape) {
 			ctx_.ui.NavigateTo(std::make_unique<PauseScreen>(ctx_));
 			return;
 		}
 
+		// debug & calibration
+		if (evt.action == InputAction::ToggleDebug && evt.pressed) {
+			ctx_.session.show_debug_overlay = !ctx_.session.show_debug_overlay;
+			return;
+		}
+		if (evt.action == InputAction::CycleCalibration && evt.pressed) {
+			static int i = 0;
+			const auto& kSteps = GameConfig::kCalibrationSteps;
+			for (; i < std::size(kSteps); ++i) {
+				if (kSteps[i] == ctx_.session.input_offset_ms) break;
+			}
+			ctx_.session.input_offset_ms = kSteps[(i + 1) % std::size(kSteps)];
+			return;
+		}
+
+		// lane
 		int lane = -1;
 		switch (evt.action) {
 		case InputAction::Lane0: lane = 0; break;
@@ -156,42 +220,14 @@ namespace rfs {
 		}
 
 		// Find nearest unhit note in this lane within Good window
-		int best_idx = -1;
-		int32_t best_dt = JudgeWindows::kGood + 1;
-		const int32_t input_ms = evt.event_song_time_ms != 0
+		const int32_t base_input_ms = evt.event_song_time_ms != 0
 			? evt.event_song_time_ms
 			: static_cast<int32_t>(song_time_ms_);
-		const auto& notes = chart_.Notes();
-		for (int i = next_idx_; i < static_cast<int>(notes.size()); ++i) {
-			if (note_hit_[i]) continue;
-			if (notes[i].lane != static_cast<uint8_t>(lane)) continue;
-			int32_t dt = std::abs(notes[i].time_ms - input_ms);
-			if (dt > JudgeWindows::kGood) {
-				if (notes[i].time_ms - input_ms > JudgeWindows::kGood) break;
-				continue;
-			}
-			if (dt < best_dt) { best_dt = dt; best_idx = i; }
-		}
+		const int32_t input_ms = base_input_ms + ctx_.session.input_offset_ms;
 
-		if (best_idx < 0) return;
-
-		note_hit_[best_idx] = 1;
-		JudgeResult r =
-			best_dt <= JudgeWindows::kPerfect ? JudgeResult::Perfect :
-			best_dt <= JudgeWindows::kGreat ? JudgeResult::Great :
-			JudgeResult::Good;
-
-		++combo_;
-		max_combo_ = std::max(max_combo_, combo_);
-		score_ += Scoring::EarnScore(r, combo_);
-		last_judge_ = r;
-		judge_display_ms_ = GameConfig::kJudgeDisplayMs;
-
-		switch (r) {
-		case JudgeResult::Perfect: ++cnt_perfect_; break;
-		case JudgeResult::Great: ++cnt_great_; break;
-		case JudgeResult::Good: ++cnt_good_; break;
-		default: break;
+		if (auto cmd = JudgementSystem::JudgeLanePress(chart_, snapshot_, lane, input_ms)) {
+			ctx_.session.last_judge_delta_ms = input_ms - chart_.Notes()[cmd->note_index].time_ms;
+			ApplyCommand(*cmd);
 		}
 	}
 
@@ -205,5 +241,4 @@ namespace rfs {
 			.miss = cnt_miss_,
 		};
 	}
-
 }

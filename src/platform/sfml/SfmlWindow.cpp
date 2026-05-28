@@ -7,6 +7,7 @@ struct SfmlWindow::Impl {
 	sf::RenderWindow window;
 	Impl(unsigned w, unsigned h, const char* t)
 		: window(sf::RenderWindow(sf::VideoMode(w, h), sf::String(t))) {
+		window.setVerticalSyncEnabled(true);
 	}
 };
 

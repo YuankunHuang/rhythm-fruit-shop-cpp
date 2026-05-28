@@ -6,13 +6,14 @@
 #include "../platform/IAudioBackendClock.h"
 #include "../platform/IAudioPlayer.h"
 #include "../rhythm/SmoothedSongClock.h"
+#include "../game/PlaySessionConfig.h"
 
 namespace rfs {
 	class Application {
 	public:
 		Application(IWindow& window, IInputSource& input, IRenderer& renderer,
 			IAudioBackendClock& backend_clock, SmoothedSongClock& song_clock,
-			IAudioPlayer& audio, IAudioPlayer& bgm);
+			IAudioPlayer& audio, IAudioPlayer& bgm, PlaySessionConfig& session);
 		bool Run();
 	private:
 		IWindow& window_;
@@ -22,5 +23,6 @@ namespace rfs {
 		SmoothedSongClock& song_clock_;
 		IAudioPlayer& audio_;
 		IAudioPlayer& bgm_;
+		PlaySessionConfig& session_;
 	};
 }

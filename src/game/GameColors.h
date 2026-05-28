@@ -12,6 +12,7 @@ namespace rfs {
 		constexpr uint32_t kTextGray = 0xCCCCCCFF;
 		constexpr uint32_t kTextError = 0xFF4444FF;
 		constexpr uint32_t kTextHint = 0x888888FF;
+		constexpr uint32_t kTextBlack = 0x000000FF;
 
 		constexpr uint32_t kBgClear = 0x1E1E28FF;
 

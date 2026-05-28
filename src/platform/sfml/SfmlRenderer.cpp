@@ -106,6 +106,15 @@ void SfmlRenderer::EndFrame() {
 }
 
 void SfmlRenderer::SubmitText(const TextDraw& draw) {
+
+	if (draw.outline_thickness > 0.f && draw.outline_rgba != 0) {
+		pimpl_->text.setOutlineColor(RgbaToSfmlColor(draw.outline_rgba));
+		pimpl_->text.setOutlineThickness(draw.outline_thickness * pimpl_->scale_);
+	}
+	else {
+		pimpl_->text.setOutlineThickness(0.f);
+	}
+
 	pimpl_->text.setCharacterSize(CharSize(draw.style, pimpl_->scale_));
 	pimpl_->text.setString(std::string(draw.text));
 	pimpl_->text.setFillColor(RgbaToSfmlColor(draw.rgba));
@@ -140,6 +149,9 @@ void SfmlRenderer::SubmitQuad(const QuadDraw& draw) {
 }
 
 int SfmlRenderer::LoadTexture(const std::string& path) {
+	if (path.empty())
+		return -1;
+
 	auto it = pimpl_->texture_index_.find(path);
 	if (it != pimpl_->texture_index_.end()) {
 		return it->second;

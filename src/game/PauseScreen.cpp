@@ -21,7 +21,9 @@ namespace rfs {
 
 	void PauseScreen::OnExit() {
 		const HostNanos host_now = SteadyNowNs();
-		ctx_.audio.Resume();
+		if (!is_back_to_root_) {
+			ctx_.audio.Resume();
+		}
 		ctx_.song_clock.ClearFrozen(host_now);
 	}
 
@@ -53,9 +55,11 @@ namespace rfs {
 		if (!evt.pressed) return;
 		switch (evt.action) {
 		case InputAction::Escape:
+			is_back_to_root_ = false;
 			ctx_.ui.GoBack();
 			break;
 		case InputAction::Enter:
+			is_back_to_root_ = true;
 			ctx_.ui.GoBackToRoot();
 			break;
 		default:

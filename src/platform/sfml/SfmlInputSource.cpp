@@ -62,7 +62,7 @@ SfmlInputSource::SfmlInputSource(SfmlWindow& window) : pimpl_(std::make_unique<I
 
 SfmlInputSource::~SfmlInputSource() = default;
 
-std::span<InputEvent> SfmlInputSource::Poll(HostNanos poll_enter_ns) noexcept {
+std::span<InputEvent> SfmlInputSource::Poll([[maybe_unused]] HostNanos poll_enter_ns) noexcept {
 
 	pimpl_->Clear();
 
@@ -92,6 +92,5 @@ std::span<InputEvent> SfmlInputSource::Poll(HostNanos poll_enter_ns) noexcept {
 		}
 	}
 
-	(void)poll_enter_ns;
 	return { pimpl_->buffer.data(), pimpl_->count };
 }

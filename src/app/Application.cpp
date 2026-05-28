@@ -5,6 +5,8 @@
 #include "../game/GameColors.h"
 #include <chrono>
 #include <memory>
+#include <algorithm>
+#include <iostream>
 
 namespace rfs {
 
@@ -17,14 +19,14 @@ namespace rfs {
 	Application::Application(
 		IWindow& window, IInputSource& input, IRenderer& renderer,
 		IAudioBackendClock& backend_clock, SmoothedSongClock& song_clock,
-		IAudioPlayer& audio, IAudioPlayer& bgm) :
+		IAudioPlayer& audio, IAudioPlayer& bgm, PlaySessionConfig& session) :
 		window_(window), input_(input), renderer_(renderer),
-		backend_clock_(backend_clock), song_clock_(song_clock), audio_(audio), bgm_(bgm) { }
+		backend_clock_(backend_clock), song_clock_(song_clock), audio_(audio), bgm_(bgm), session_(session) { }
 
 	bool Application::Run() {
 		UIManager ui{};
 
-		GameContext ctx{ window_, renderer_, audio_, bgm_, ui, song_clock_ };
+		GameContext ctx{ window_, renderer_, audio_, bgm_, ui, song_clock_, session_ };
 		ui.NavigateTo(std::make_unique<MainMenuScreen>(ctx));
 
 		auto last_time = std::chrono::steady_clock::now();

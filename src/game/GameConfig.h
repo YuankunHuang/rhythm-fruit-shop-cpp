@@ -3,20 +3,36 @@
 #include <algorithm>
 #include <cstdint>
 #include "../platform/UiFontConfig.h"
+#include <string>
 
 using namespace rfs;
 
 namespace GameConfig {
+
+	// Calibration
+	static constexpr int32_t kCalibrationSteps[] = {
+		-75, -50, -25, 0, 25, 50, 75
+	};
+
 	// Loading
+	constexpr const char* kFallbackCoverPath = "assets/covers/cover-fallback.png";
+	inline std::string ResolveCoverPath(std::string path) {
+		if (path.empty()) {
+			return kFallbackCoverPath;
+		}
+		return path;
+	}
+
 	constexpr float kSpinnerPeriodMs = 800.f;
+
 
 	// Char select
 	constexpr float kSpeedLevels[] = { 2400.f, 1800.f, 1400.f, 1100.f };
 	constexpr int kDefaultSpeedIndex = 1; // lv2
 	constexpr float kPreviewStartMs = 8000.f;
 	constexpr float kPreviewDurationMs = 15'000.f;
-	constexpr float kPreviewFadeInDuration = 1.f;
-	constexpr float kPreviewFadeOutDuration = 1.f;
+	constexpr float kPreviewFadeInDuration = 1000.f;
+	constexpr float kPreviewFadeOutDuration = 1000.f;
 
 	// Gameplay
 	constexpr uint8_t kLaneCount = 4;
