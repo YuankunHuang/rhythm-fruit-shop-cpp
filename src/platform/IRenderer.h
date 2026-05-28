@@ -20,7 +20,7 @@ namespace rfs {
 		float x, y; // anchor pos
 		Anchor anchor; // anchor type
 		TextStyle style;
-		std::string_view text;
+		std::string text;
 		std::uint32_t rgba;
 		std::uint32_t outline_rgba = 0; // 0: no outline
 		float outline_thickness = 1.f;

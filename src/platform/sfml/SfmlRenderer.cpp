@@ -38,13 +38,13 @@ namespace {
 		float oy = 0.f;
 
 		switch (anchor) {
-		case Anchor::TopLeft:      break;
-		case Anchor::TopCenter:    ox = b.left + b.width * 0.5f; break;
-		case Anchor::TopRight:     ox = b.left + b.width; break;
-		case Anchor::CenterLeft:   oy = b.top + b.height * 0.5f; break;
+		case Anchor::TopLeft:      ox = b.left; oy = b.top; break;
+		case Anchor::TopCenter:    ox = b.left + b.width * 0.5f; oy = b.top; break;
+		case Anchor::TopRight:     ox = b.left + b.width; oy = b.top; break;
+		case Anchor::CenterLeft:   ox = b.left; oy = b.top + b.height * 0.5f; break;
 		case Anchor::Center:       ox = b.left + b.width * 0.5f; oy = b.top + b.height * 0.5f; break;
 		case Anchor::CenterRight:  ox = b.left + b.width; oy = b.top + b.height * 0.5f; break;
-		case Anchor::BottomLeft:   oy = b.top + b.height; break;
+		case Anchor::BottomLeft:   ox = b.left; oy = b.top + b.height; break;
 		case Anchor::BottomCenter: ox = b.left + b.width * 0.5f; oy = b.top + b.height; break;
 		case Anchor::BottomRight:  ox = b.left + b.width; oy = b.top + b.height; break;
 		}
@@ -123,6 +123,7 @@ void SfmlRenderer::SubmitText(const TextDraw& draw) {
 }
 
 float SfmlRenderer::MeasureTextWidth(std::string_view text, TextStyle style) {
+	pimpl_->text.setOutlineThickness(0.f); // outline may introduce minor diff, clear before measuring
 	pimpl_->text.setCharacterSize(CharSize(style, pimpl_->scale_));
 	pimpl_->text.setString(std::string(text));
 	return pimpl_->text.getLocalBounds().width;

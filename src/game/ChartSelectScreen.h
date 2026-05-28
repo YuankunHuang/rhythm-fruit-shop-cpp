@@ -31,7 +31,6 @@ namespace rfs {
 
 		int selected_song_ = 0;
 		int selected_diff_ = 0;
-		int selected_speed_idx_ = GameConfig::kDefaultSpeedIndex;
 
 		// How many songs fit in the visible list area
 		static constexpr int kVisibleRows = 7;
