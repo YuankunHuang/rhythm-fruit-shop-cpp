@@ -36,7 +36,8 @@ namespace rfs {
 		// translucent background
 		const float panel_w = ui.win_w * 0.28f;
 		const float panel_h = line_h * 6.2f;
-		renderer.SubmitQuad({ x - 8.f, y - 8.f, panel_w, panel_h, GameColors::kPanelBg });
+		const float inset = ui.Px(8.f);
+		renderer.SubmitQuad({ x - inset, y - inset, panel_w, panel_h, GameColors::kPanelBg });
 
 		const auto draw = [&](const std::string& s) {
 			DrawLine(renderer, x, y, Anchor::TopLeft, TextStyle::Caption, s, GameColors::kTextGray);

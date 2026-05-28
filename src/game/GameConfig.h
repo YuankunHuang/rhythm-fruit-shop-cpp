@@ -27,7 +27,7 @@ namespace GameConfig {
 
 
 	// Char select
-	constexpr float kSpeedLevels[] = { 2400.f, 1800.f, 1400.f, 1100.f };
+	constexpr float kSpeedLevels[] = { 2000.f, 1600.f, 1200.f, 800.f };
 	constexpr int kDefaultSpeedIndex = 1; // lv2
 	constexpr float kPreviewStartMs = 8000.f;
 	constexpr float kPreviewDurationMs = 15'000.f;
@@ -36,19 +36,25 @@ namespace GameConfig {
 
 	// Gameplay
 	constexpr uint8_t kLaneCount = 4;
-	constexpr float kApproachTimeMs = 1600.f;
-	constexpr float kJudgeDisplayMs = 600.f;
+	constexpr float kGameplayLeadInMs = 1600.f;
+	constexpr float kJudgeDisplayMs = 500.f;
 	constexpr float kSongEndDelayMs = 2000.f;
+	constexpr float kSparkLifetime = 1200.f;
 
 	// Layout
 	constexpr float kFieldWidthFrac = 0.50f;
 	constexpr float kFieldCenterFrac = 0.50f;
-	constexpr float kJudgeYFrac = 0.86f;
-	constexpr float kSpawnYFrac = 0.08f;
+	constexpr float kJudgeYFrac = 0.95f;
+	constexpr float kSpawnYFrac = 0.02f;
 	constexpr float kNoteHFrac = 0.14f;
 
 	// Window/UI
 	constexpr float kContentMarginFrac = 0.08f;
+
+	// UiLayout conventions:
+	// - Positions/sizes: prefer content_*, win_w/win_h fractions, or font_* multiples.
+	// - Small constants (<16 ref px): use UiLayout::Px(n), never raw literals.
+	// - Do not cap layout with absolute pixel max (e.g. min(w*frac, 480)).
 
 	struct UiLayout {
 		float win_w = 0.f;
@@ -65,6 +71,8 @@ namespace GameConfig {
 		float content_bottom = 0.f;
 		float content_center_x = 0.f;
 		float content_center_y = 0.f;
+
+		float Px(float ref_px) const { return ref_px * scale; }
 
 		static UiLayout Compute(float win_w, float win_h) {
 			UiLayout u{};

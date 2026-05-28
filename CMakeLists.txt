@@ -68,6 +68,7 @@ add_library(rfs_app STATIC
 	src/game/ResultScreen.cpp
 	src/game/PauseScreen.cpp
 	src/game/DebugOverlay.cpp
+	src/game/UiDraw.cpp
 )
 target_include_directories(rfs_app
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src

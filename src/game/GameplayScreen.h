@@ -11,8 +11,10 @@
 #include "GameRules.h"
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace rfs {
+
 	class GameplayScreen : public IScreen {
 	public:
 		GameplayScreen(GameContext ctx, FrozenChart chart, std::string cover_path);
@@ -27,6 +29,21 @@ namespace rfs {
 		void HandleInput(const InputEvent& evt) override;
 
 	private:
+
+		// Hit fx
+		struct HitSpark {
+			float cx = 0.f;
+			float cy = 0.f;
+			float age_ms = 0.f;
+			std::uint32_t color = 0;
+			int lane = 0;
+		};
+		std::vector<HitSpark> hit_sparks_;
+		int last_spark_idx_ = -1;
+		void SpawnHitFx(int lane, JudgeResult result);
+		void UpdateHitFx(float delta_sec);
+		void RenderHitFx();
+
 		uint8_t LaneCount() const { return GameConfig::kLaneCount; }
 		void ApplyCommand(const JudgeCommand& cmd);
 
@@ -36,6 +53,13 @@ namespace rfs {
 		float song_time_ms_ = 0.f;
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};
+
+		float chart_end_ms_ = 1.f;
+		float gameplay_end_ms_ = 0.f;
+		float progress_time_ms_ = 0.f;
+		bool  is_in_outro_ = false;
+		float audio_volume_ = 1.f;
+		bool  result_pushed_ = false;
 
 		// judgement display
 		JudgeResult last_judge_{};
@@ -53,10 +77,9 @@ namespace rfs {
 		// pause
 		bool paused_ = false;
 
-		// song ending
-		bool song_ending_ = false;
-		float end_timer_ms_ = 0.f;
-		bool result_pushed_ = false;
+		// lead in
+		bool is_in_lead_in_ = false;
+		float lead_in_ms_ = 0.f;
 
 		GameResult BuildResult() const;
 

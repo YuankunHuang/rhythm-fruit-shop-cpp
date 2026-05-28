@@ -5,14 +5,14 @@
 #include "GameConfig.h"
 #include <algorithm>
 #include <string>
-#include <cmath>
+#include "UiDraw.h"
 
 namespace rfs {
 
 	namespace {
 
 		void DrawStatRow(rfs::IRenderer& renderer, float label_x, float value_x, float y,
-			std::string_view label, std::string_view value, std::uint32_t value_color)
+			const std::string& label, const std::string& value, std::uint32_t value_color)
 		{
 			renderer.SubmitText({ label_x, y, Anchor::CenterLeft, TextStyle::Body, label, GameColors::kTextGray });
 			renderer.SubmitText({ value_x, y, Anchor::CenterRight, TextStyle::Body, value, value_color });
@@ -20,41 +20,48 @@ namespace rfs {
 
 	}
 
-	namespace {
-		void DrawCoverFill(IRenderer& r, int handle, float win_w, float win_h, float alpha = 1.f) {
-			if (handle < 0) return;
-			float tw = win_w, th = win_h;
-			r.GetTextureSize(handle, tw, th);
-			if (tw <= 0.f || th <= 0.f) return;
-			float scale = std::max(win_w / tw, win_h / th);
-			float dw = tw * scale, dh = th * scale;
-			r.SubmitSprite((win_w - dw) * 0.5f, (win_h - dh) * 0.5f, dw, dh, handle, alpha);
+	ResultScreen::ResultScreen(GameContext ctx, GameResult result, std::string cover_path)
+		: ctx_(ctx), result_(result), cover_path_(std::move(cover_path)) {
+	}
+
+	void ResultScreen::OnEnter() {
+		TryLoadCover();
+	}
+
+	void ResultScreen::TryLoadCover() {
+		if (cover_handle_ >= 0) return;
+		cover_handle_ = ctx_.renderer.LoadTexture(cover_path_);
+		if (cover_handle_ < 0) {
+			cover_handle_ = ctx_.renderer.LoadTexture(GameConfig::kFallbackCoverPath);
 		}
 	}
 
-	ResultScreen::ResultScreen(GameContext ctx, GameResult result, std::string cover_path)
-		: ctx_(ctx), result_(result), cover_path_(std::move(cover_path)) {}
-
 	void ResultScreen::Update(const FrameContext& ctx) {
 		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
+
+		if (retry_cooldown_ > 0.f) {
+			retry_cooldown_ -= ctx.delta_time * 1000.f;
+		}
+		if (cover_handle_ < 0 && retry_cooldown_ <= 0.f) {
+			TryLoadCover();
+			retry_cooldown_ = 500.f;
+		}
 	}
 
 	void ResultScreen::Render() {
 		const auto& ui = ui_;
 
-		// Cover background
-		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
-		DrawCoverFill(ctx_.renderer, cover_handle, ui.win_w, ui.win_h);
+		UiDraw::CoverFill(ctx_.renderer, cover_handle_, ui.win_w, ui.win_h);
 		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
 
-		const float panel_w = std::min(ui.win_w * 0.55f, 480.f);
-		const float panel_h = ui.win_h * 0.72f;
-		const float panel_x = (ui.win_w - panel_w) * 0.5f;
-		const float panel_y = (ui.win_h - panel_h) * 0.5f;
-		const float pad     = ui.win_w * 0.04f;
+		const float panel_w = ui.content_right - ui.content_left;
+		const float panel_h = ui.content_bottom - ui.content_top;
+		const float panel_x = ui.content_left;
+		const float panel_y = ui.content_top;
+		const float pad = ui.font_body * 0.8f;
 		const float label_x = panel_x + pad;
 		const float value_x = panel_x + panel_w - pad;
-		const float line_h  = ui.font_body * 1.9f;
+		const float line_h = ui.font_body * 1.9f;
 
 		ctx_.renderer.SubmitQuad({ panel_x, panel_y, panel_w, panel_h, GameColors::kPanelBg });
 

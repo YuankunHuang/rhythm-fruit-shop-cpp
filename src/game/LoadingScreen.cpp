@@ -7,6 +7,7 @@
 #include "../platform/IRenderer.h"
 #include <algorithm>
 #include <chrono>
+#include "UiDraw.h"
 
 namespace rfs {
 
@@ -30,18 +31,6 @@ namespace rfs {
 			r.detail = err.code + ": " + err.message;
 		}
 		return r;
-	}
-
-	namespace {
-		void DrawCoverFill(IRenderer& r, int handle, float win_w, float win_h, float alpha = 1.f) {
-			if (handle < 0) return;
-			float tw = win_w, th = win_h;
-			r.GetTextureSize(handle, tw, th);
-			if (tw <= 0.f || th <= 0.f) return;
-			float scale = std::max(win_w / tw, win_h / th);
-			float dw = tw * scale, dh = th * scale;
-			r.SubmitSprite((win_w - dw) * 0.5f, (win_h - dh) * 0.5f, dw, dh, handle, alpha);
-		}
 	}
 
 	LoadingScreen::LoadingScreen(
@@ -96,7 +85,7 @@ namespace rfs {
 
 		// Cover background
 		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
-		DrawCoverFill(ctx_.renderer, cover_handle, ui.win_w, ui.win_h);
+		UiDraw::CoverFill(ctx_.renderer, cover_handle, ui.win_w, ui.win_h);
 		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
 
 		if (!ready_) {
@@ -151,6 +140,7 @@ namespace rfs {
 				return;
 			}
 
+			ctx_.song_clock.Reset();
 			ctx_.audio.Stop();
 			if (!ctx_.audio.Load(*resolved)) {
 				load_ok_ = false;
@@ -159,9 +149,7 @@ namespace rfs {
 				return;
 			}
 
-		ctx_.song_clock.Reset();
-		ctx_.audio.Play();
-		ctx_.ui.ReplaceTop(std::make_unique<GameplayScreen>(ctx_, std::move(*chart_), cover_path_));
+			ctx_.ui.ReplaceTop(std::make_unique<GameplayScreen>(ctx_, std::move(*chart_), cover_path_));
 		}
 	}
 
