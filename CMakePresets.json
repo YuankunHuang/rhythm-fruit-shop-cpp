@@ -17,6 +17,11 @@
       "name": "x64-debug-build",
       "configurePreset": "x64-debug",
       "configuration": "Debug"
+    },
+    {
+      "name": "x64-release-build",
+      "configurePreset": "x64-debug",
+      "configuration": "Release"
     }
   ]
 }
