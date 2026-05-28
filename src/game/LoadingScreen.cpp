@@ -47,9 +47,30 @@ namespace rfs {
 		future_ = std::async(std::launch::async, DoLoad, std::move(chart_path), std::move(difficulty));
 	}
 
+	void LoadingScreen::OnEnter() {
+		TryLoadCover();
+	}
+
+	void LoadingScreen::TryLoadCover() {
+		if (cover_handle_ >= 0) return;
+		cover_handle_ = ctx_.renderer.LoadTexture(cover_path_);
+		if (cover_handle_ < 0) {
+			cover_handle_ = ctx_.renderer.LoadTexture(GameConfig::kFallbackCoverPath);
+		}
+	}
+
 	void LoadingScreen::Update(const FrameContext& ctx) {
 		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
 		spin_ms_ += ctx.delta_time * 1000.f;
+
+		// cover
+		if (retry_cooldown_ > 0.f) {
+			retry_cooldown_ -= ctx.delta_time * 1000.f;
+		}
+		if (cover_handle_ < 0 && retry_cooldown_ <= 0.f) {
+			TryLoadCover();
+			retry_cooldown_ = 500.f;
+		}
 
 		if (!ready_ && future_.valid()) {
 			if (future_.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
@@ -84,8 +105,7 @@ namespace rfs {
 		const float line_gap = ui.font_body * 1.6f;
 
 		// Cover background
-		int cover_handle = ctx_.renderer.LoadTexture(cover_path_);
-		UiDraw::CoverFill(ctx_.renderer, cover_handle, ui.win_w, ui.win_h);
+		UiDraw::CoverFill(ctx_.renderer, cover_handle_, ui.win_w, ui.win_h);
 		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
 
 		if (!ready_) {

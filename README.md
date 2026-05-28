@@ -10,19 +10,26 @@ Web prototype (visuals, zh-CN narrative, shop loop) → [../README.md#web-protot
 
 ## Quick Start
 
-**Requirements:** Visual Studio 2022/2026, CMake 3.24+, vcpkg (manifest mode)
+**Requirements:** Visual Studio 2022/2026 with **Desktop development with C++**, CMake 3.24+, vcpkg (manifest mode)
 
 1. Open this folder (`cpp_core/`) in Visual Studio (**File → Open → Folder**).
-2. Wait for CMake configure. vcpkg installs **SFML 2.6.1** and **nlohmann-json** from `vcpkg.json`.
-3. Set **`rfs_demo`** as the startup project and press **F5**.
+2. Select CMake preset **`win64-vcpkg`** (Ninja Multi-Config + vcpkg manifest).
+3. Wait for configure. vcpkg installs **SFML 2.6.1** and **nlohmann-json** from `vcpkg.json`.
+4. Set **`rfs_demo`** as the startup project and press **F5**.
 
 The debugger working directory is set to `cpp_core/` in CMake, so asset paths such as `assets/audio/...` resolve correctly.
 
-If SFML DLLs are missing at runtime, copy the debug binaries from:
+If `VCPKG_ROOT` is not set globally, Visual Studio usually picks up the vcpkg bundled with the C++ workload. From a command prompt you can set:
 
-`out/build/x64-Debug/vcpkg_installed/x64-windows/debug/bin/`
+```bat
+set VCPKG_ROOT=C:\Program Files\Microsoft Visual Studio\18\Community\VC\vcpkg
+```
 
-into the same folder as `rfs_demo.exe`.
+If SFML DLLs are missing at runtime during local Debug builds, copy the debug binaries from:
+
+`out/build/win64-vcpkg/Debug/vcpkg_installed/x64-windows/debug/bin/`
+
+into the same folder as `RhythmFruitShop.exe` (or use the Release packaging flow below).
 
 ## Controls
 
@@ -112,8 +119,35 @@ Input events carry a per-key host-monotonic timestamp at poll time; judgment com
 Run tests from the `cpp_core/` working directory:
 
 ```bat
-out\build\x64-Debug\rfs_tests.exe
+out\build\win64-vcpkg\Debug\rfs_tests.exe
 ```
+
+## Release Packaging (Windows x64)
+
+From the **repository root** (not `cpp_core/`):
+
+```bat
+08_package_cpp_core_release.bat
+```
+
+This script:
+
+1. Uses Visual Studio's bundled CMake (not an older PATH cmake)
+2. Configures preset **`win64-vcpkg`** and builds **`win64-release-build`**
+3. Stages `dist\RhythmFruitShop-win64\` (exe, SFML DLLs, optimized assets, `PLAY.txt`)
+4. Creates `dist\RhythmFruitShop-win64.zip`
+
+Requirements: Visual Studio with C++ workload, Python 3 (+ Pillow for asset optimization). Optional: `ffmpeg` on PATH for mp3 re-encode during asset staging.
+
+The same staging logic is available as:
+
+```bat
+python scripts\package_cpp_core_release.py --build-root cpp_core\out\build\win64-vcpkg
+```
+
+### CI
+
+GitHub Actions workflow **C++ Release (Windows x64)** (`.github/workflows/cpp-release-windows.yml`) can be triggered manually via **workflow_dispatch**. It builds with the same CMake presets and uploads `RhythmFruitShop-win64.zip` as an artifact.
 
 ## Project Layout
 
