@@ -5,6 +5,7 @@
 #include "platform/miniaudio/MiniaudioAudioPlayer.h"
 #include "platform/miniaudio/MiniaudioAudioBackendClock.h"
 #include "rhythm/SmoothedSongClock.h"
+#include "game/PlaySessionConfig.h"
 
 int main() {
 
@@ -17,7 +18,8 @@ int main() {
 
 	rfs::MiniaudioAudioBackendClock backend_clock{player};
 	rfs::SmoothedSongClock song_clock{};
-	rfs::Application app(window, input, renderer, backend_clock, song_clock, player, bgm_player);
+	rfs::PlaySessionConfig session{};
+	rfs::Application app(window, input, renderer, backend_clock, song_clock, player, bgm_player, session);
 
 	return app.Run() ? 0 : 1;
 }

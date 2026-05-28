@@ -3,6 +3,7 @@
 #include "../app/IScreen.h"
 #include "../app/FrameContext.h"
 #include "../rhythm/FrozenChart.h"
+#include "../rhythm/JudgementSystem.h"
 #include "GameContext.h"
 #include "GameLayout.h"
 #include "GameConfig.h"
@@ -16,8 +17,10 @@ namespace rfs {
 	public:
 		GameplayScreen(GameContext ctx, FrozenChart chart, std::string cover_path);
 
-		void OnPause() override { paused_ = true; }
-		void OnResume() override { paused_ = false; }
+		void OnEnter() override;
+		void OnPause() override;
+		void OnResume() override;
+		void OnExit() override;
 
 		void Update(const FrameContext& ctx) override;
 		void Render() override;
@@ -25,6 +28,7 @@ namespace rfs {
 
 	private:
 		uint8_t LaneCount() const { return GameConfig::kLaneCount; }
+		void ApplyCommand(const JudgeCommand& cmd);
 
 		GameContext ctx_;
 		FrozenChart chart_;
@@ -32,10 +36,6 @@ namespace rfs {
 		float song_time_ms_ = 0.f;
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};
-
-		// note processing
-		std::vector<uint8_t> note_hit_;   // 0 = unprocessed, 1 = hit/missed
-		int next_idx_ = 0;
 
 		// judgement display
 		JudgeResult last_judge_{};
@@ -59,5 +59,7 @@ namespace rfs {
 		bool result_pushed_ = false;
 
 		GameResult BuildResult() const;
+
+		GameplaySnapshot snapshot_;
 	};
 }

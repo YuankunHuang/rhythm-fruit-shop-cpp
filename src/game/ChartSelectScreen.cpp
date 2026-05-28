@@ -32,8 +32,7 @@ namespace rfs {
 		else {
 			catalog_ok_ = true;
 		}
-		fallback_handle_ = ctx_.renderer.LoadTexture("assets/covers/cover-fallback.png");
-		cover_handle_ = fallback_handle_;
+		fallback_handle_ = ctx_.renderer.LoadTexture(GameConfig::kFallbackCoverPath);
 	}
 
 	void ChartSelectScreen::OnEnter() {
@@ -41,14 +40,17 @@ namespace rfs {
 	}
 
 	void ChartSelectScreen::OnResume() {
-		// Stop whatever was playing and restart the preview state machine.
-		// With sound-level Pause/Resume the engine stays alive; no Resume() needed here.
+		// Only restart the preview state machine when bgm is not playing / back from Gameplay!
+		if (ctx_.bgm.IsPlaying()) {
+			return;
+		}
+
 		StartPreviewForCurrentSong();
 	}
 
 	void ChartSelectScreen::OnPause() {
 		// Going into LoadingScreen — pause BGM so song audio can take over.
-		ctx_.bgm.Pause();
+		//ctx_.bgm.Pause();
 	}
 
 	void ChartSelectScreen::Update(const FrameContext& ctx) {
@@ -138,13 +140,17 @@ namespace rfs {
 		const float cx = ui.content_center_x;
 
 		// Full-screen cover background with crossfade
-		if (crossfade_t_ < 1.f && old_cover_handle_ >= 0) {
-			DrawCoverFill(ctx_.renderer, old_cover_handle_, ui.win_w, ui.win_h, 1.f);
+		if (crossfade_t_ < 1.f) {
+			if (old_cover_handle_ >= 0) {
+				DrawCoverFill(ctx_.renderer, old_cover_handle_, ui.win_w, ui.win_h, 1.f - crossfade_t_);
+			}
 			DrawCoverFill(ctx_.renderer, cover_handle_, ui.win_w, ui.win_h, crossfade_t_);
+			
 		} else {
 			DrawCoverFill(ctx_.renderer, cover_handle_, ui.win_w, ui.win_h, 1.f);
 		}
-		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x000000B0 });
+
+		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui.win_w, ui.win_h, 0x00000080 });
 
 		// Title bar
 		ctx_.renderer.SubmitText({
@@ -229,9 +235,9 @@ namespace rfs {
 				const float quad_w = tab_w - ui.font_body * 0.3f;
 				ctx_.renderer.SubmitQuad({
 					tab_x + (tab_w - quad_w) * 0.5f,
-					diff_y - ui.font_body * 0.6f,
+					diff_y - ui.font_body * 0.8f,
 					quad_w,
-					ui.font_body * 1.4f,
+					ui.font_body * 1.6f,
 					GameColors::kPanelBg });
 			}
 			ctx_.renderer.SubmitText({
@@ -266,9 +272,9 @@ namespace rfs {
 				const float quad_w = tab_w - ui.font_body * 0.3f;
 				ctx_.renderer.SubmitQuad({
 					tab_x + (tab_w - quad_w) * 0.5f,
-					speed_y - ui.font_body * 0.6f,
+					speed_y - ui.font_body * 0.8f,
 					quad_w,
-					ui.font_body * 1.4f,
+					ui.font_body * 1.6f,
 					GameColors::kPanelBg });
 			}
 			ctx_.renderer.SubmitText({
@@ -284,7 +290,7 @@ namespace rfs {
 		cx, ui.content_bottom,
 		Anchor::BottomCenter, TextStyle::Caption,
 		"ENTER Play    Up/Down Song    Left/Right Difficulty    ESC Back",
-		GameColors::kTextHint });
+		GameColors::kTextHint, GameColors::kTextBlack });
 
 	}
 
@@ -389,9 +395,14 @@ namespace rfs {
 
 		cover_path_loaded_ = new_cover;
 		if (new_cover.empty()) {
-			// No cover for this song — use fallback immediately
+			// No cover for this song — use fallback
 			cover_pending_handle_ = -2;
-			cover_handle_ = fallback_handle_;
+			const int new_handle = fallback_handle_;
+			if (new_handle != cover_pending_handle_) {
+				old_cover_handle_ = cover_handle_;
+				cover_handle_ = new_handle;
+				crossfade_t_ = 0.f;
+			}
 		} else {
 			// Start async load; keep showing current cover until ready
 			cover_pending_handle_ = ctx_.renderer.LoadTextureAsync(new_cover);
