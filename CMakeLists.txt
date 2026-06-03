@@ -8,6 +8,7 @@ if (MSVC)
 endif()
 
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(doctest CONFIG REQUIRED)
 
 # rfs_core: core library, no external dependencies.
 add_library(rfs_core STATIC
@@ -95,14 +96,25 @@ target_link_libraries(rfs_demo PRIVATE
 
 # rfs_tests: test target, depends on rfs_core and one platform implementation.
 add_executable(rfs_tests
-	src/rfs_tests.cpp
+	tests/test_main.cpp
+	tests/TestChartLoader.cpp
+	tests/TestSmoothedSongClock.cpp
+	tests/TestJudgementSystem.cpp
 )
 set_target_properties(rfs_tests PROPERTIES
-	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 target_link_libraries(rfs_tests
 	PRIVATE rfs_core rfs_platform_iface rfs_warnings
 )
+target_compile_definitions(rfs_tests
+    PRIVATE RFS_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+)
+include(doctest)
+doctest_discover_tests(rfs_tests
+	PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+enable_testing()
 
 # DEPENDENCY GUARDS
 include(cmake/DependencyGuards.cmake)

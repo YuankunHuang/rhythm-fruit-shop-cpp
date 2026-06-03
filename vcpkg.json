@@ -4,7 +4,8 @@
   "builtin-baseline": "d59510da59a2ee8b943509998b63da7b472d93cf",
   "dependencies": [
     "sfml",
-    "nlohmann-json"
+    "nlohmann-json",
+    "doctest"
   ],
   "overrides": [
     {
