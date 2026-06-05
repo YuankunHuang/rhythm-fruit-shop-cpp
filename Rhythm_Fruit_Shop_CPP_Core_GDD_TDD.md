@@ -3,7 +3,7 @@ title: "Rhythm Fruit Shop C++ Core - GDD + TDD"
 subtitle: "A C++ game programmer's native rhythm core, built to grow toward high-performance systems work"
 author: "Yuankun Huang"
 date: "2026-06-05"
-version: "v3.0"
+version: "v3.1"
 ---
 
 # Rhythm Fruit Shop C++ Core - GDD + TDD
@@ -1684,7 +1684,7 @@ A senior engineer is judged not only on what they built but on what they chose n
 
 ## 38. Determinism and replay (design hook)
 
-> **Status: [v2] design hook. No replay code exists today** - there is no `ReplayRecord` type, header, or `ReplayFrom` entry point. This section records why the architecture is *amenable* to replay, not a feature that ships.
+> **Status: [Planned]. No replay code exists today** - there is no `ReplayRecord` type, header, or `ReplayFrom` entry point. This section records why the architecture is *amenable* to replay; the committed plan to actually build it is **Phase 1 of the project north star (§39)**, where replay stops being a deferred hook and becomes the next deep milestone after the §30 backlog.
 
 ### 38.1 Why the architecture is replay-amenable
 
@@ -1708,6 +1708,51 @@ ReplayRecord {
 ### 38.3 Honest cost
 
 Modest once the headless session exists, because the decide/commit shape removes the hard part. But it is genuinely deferred work, not a header sitting in the repo - which is precisely the kind of over-claim this v3.0 rewrite removes.
+
+## 39. Project north star: the determinism deep-dive roadmap
+
+> **Status: [Planned] roadmap, not shipped.** This section records the long-term direction for the project: instead of widening into many game genres, it is taken **vertically deep along one spine - determinism** - until it demonstrates real-time systems engineering, not just a playable demo. Every phase below has an acceptance signal, and each phase's [Planned] tag flips to [Shipped] only when its signal is met.
+
+### 39.1 Thesis: one theme, taken deep, not many themes taken shallow
+
+The strategic choice is to keep a **single theme** (this rhythm core) and extend it **downward into harder systems problems**, rather than rebuilding the same shallow depth across new genres. The unifying axis is **determinism**: a system whose output is a pure function of its inputs and clock. Determinism is the through-line that connects timing (shipped), replay, and networked simulation - they are the same property observed at three depths.
+
+Explicitly **out of scope for this roadmap** (they add surface area, not spine depth): online leaderboards / backend CRUD, "full-stack" web layers, and heavy visual-effects polish. They may appear later as garnish, but they are not milestones and must not dilute the depth narrative.
+
+### 39.2 Phase 0 - Provable determinism + performance (= the §30 backlog)
+
+Finish the wrap-up backlog (§30): headless `GameplaySession`, zero hot-path allocation contract, and measured update/latency budgets.
+
+- **Acceptance:** `TestPerfectRunInvariant` passes under a `MockAudioBackendClock`; 60 s of debug play reports zero counted hot-path allocations; overlay shows measured p50/p99.
+- **Why it is the foundation:** replay and netcode are both *built on* a headless, deterministic, allocation-stable session. This phase is the substrate for everything after it.
+
+### 39.3 Phase 1 - Replay (the determinism payoff)
+
+Promote §38 from design hook to implementation: record the input + clock-anchor stream, and replay it through the headless session for **bit-exact reproduction** of a run.
+
+- **Build:** a `ReplayRecord` (chart id + difficulty, input history, anchor history, `JudgementConfig` + offset); recording in the main loop; a `ReplayClock` + mock input source as the playback driver; simple serialization.
+- **Acceptance:** record a live run, replay it headlessly, and assert the final score, judgment counts, and per-note results are **identical** to the original (bit-exact). A divergence is a determinism bug and is treated as P0.
+- **Why it matters:** this is the demonstration that the "deterministic" claim is real and not rhetorical - the single most convincing artifact for a real-time/systems interview.
+
+### 39.4 Phase 2 - Deterministic networked play (the capstone)
+
+Extend determinism across the network: two clients running the same deterministic session in sync.
+
+- **Build:** start with **lockstep** (exchange only inputs per tick; both sides simulate identically), then optionally evolve toward **rollback** (client-side prediction + re-simulation on input arrival) - the same model class used by competitive games. Replay infrastructure from Phase 1 is the substrate: a netcode session is a replay fed by a live, remote input stream.
+- **Acceptance:** two clients play/spectate the same chart in sync; under injected latency and jitter, both reach identical end states (the determinism invariant holds across the network); a desync is detectable and diagnosable.
+- **Why it matters:** this is the vertebra that targets real-time multiplayer / netcode roles directly, and it is the hardest, most AI-resistant, highest-signal piece of the whole project.
+
+### 39.5 Optional second theme (only if aiming explicitly at the simulation door)
+
+If the target shifts toward simulation/robotics/autonomous-systems work, add **one** further project - a large-scale agent / traffic simulation (spatial hashing, data-oriented layout, performance budgets, determinism) - as a second, separate deep dive. This is optional and later; it is **not** part of the rhythm-core roadmap above. The primary north star remains Phases 0-2.
+
+### 39.6 The one-sentence narrative this roadmap buys
+
+On completion of Phases 0-2, the project supports a single, coherent claim that hires a real-time systems engineer:
+
+> *"A rhythm core that is provably deterministic, with bit-exact replay and deterministic lockstep multiplayer netcode."*
+
+Three deep milestones on one spine beat a shelf of shallow genres. That coherence - not breadth - is the point.
 
 ---
 
@@ -1773,6 +1818,7 @@ The bar this document sets for itself is not "everything is built" - it is "noth
 
 ## Document changelog
 
+- **v3.1 (2026-06-05)** - Added §39 "Project north star: the determinism deep-dive roadmap" - one theme (this rhythm core) taken vertically deep along the determinism spine, in three [Planned] phases with acceptance signals: Phase 0 = the §30 backlog (provable determinism + zero-alloc + measured budgets), Phase 1 = bit-exact replay (promoting §38 from a deferred hook), Phase 2 = deterministic lockstep/rollback multiplayer netcode. Recorded an explicit anti-scope (no leaderboard/full-stack/VFX as milestones) and an optional later second theme (large-scale agent/traffic simulation) only if aiming at the simulation door. Updated §38 status from [v2] hook to [Planned] Phase 1.
 - **v3.0 (2026-06-05)** - Reconciled the entire document line-by-line with the shipped code. Introduced the [Shipped]/[Planned]/[v2] tagging system. Re-anchored positioning to a game programmer growing into native C++/systems work (removed senior-title and 48-hour-sprint framing). Corrected drift: two-layer clock (L2 ChartClock -> [v2]); single `song_offset_ms` (dual calibration -> [v2]); judgment windows 50/100/150 and removal of the spurious `miss_window_ms`; real `NoteDef`/`FrozenChart`/`JudgeCommand`/`IRenderer`/`InputAction` shapes; `UIManager` screen flow; actual controls; accuracy weights; real `ChartLoader` signature; actual 12-case test suite. Reframed memory contracts, diagnostics, headless `GameplaySession`, `ScoreSystem`/`ChartValidator`/`NoteTimeline`, and replay as [Planned]/[v2] with acceptance signals. Replaced the sprint plan with a committed wrap-up backlog (§30). Rewrote resume/cover-letter/interview material to claim only shipped work. Promoted multi-chart song select from "out of scope" to a delivered feature. Softened the timing "measured p99" claim to a derived bound pending the metrics layer.
 - **v2.0** - Production-grade rewrite (aspirational architecture; superseded by v3.0's reconciliation with code).
 - **v1.0** - Initial design.
