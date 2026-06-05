@@ -128,15 +128,23 @@ namespace rfs {
 		const uint32_t title_color = load_ok_ ? GameColors::kTextWhite : GameColors::kTextError;
 		ctx_.renderer.SubmitText({ cx, cy - line_gap * 1.2f, Anchor::Center, TextStyle::Title, title_, title_color });
 		ctx_.renderer.SubmitText({ cx, cy, Anchor::Center, TextStyle::Body, detail_, GameColors::kTextGray });
+
+		const float key_gap = ui.Px(8.f);
 		if (load_ok_) {
-			ctx_.renderer.SubmitText({ cx, cy + line_gap * 1.2f, Anchor::Center, TextStyle::Caption,
-				"Press Enter to play", GameColors::kTextHint });
-			ctx_.renderer.SubmitText({ cx, cy + line_gap * 2, Anchor::Center, TextStyle::Caption,
-				"Press Esc to go back", GameColors::kTextHint });
+			const float w_play = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ENTER", "Play", key_gap);
+			UiDraw::KeyHint(ctx_.renderer, cx - w_play * 0.5f, cy + line_gap * 1.2f, TextStyle::Caption,
+				"ENTER", "Play", GameColors::kSelectAccent, GameColors::kTextGray,
+				GameColors::kOutlineBlack, key_gap);
+			const float w_back = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ESC", "Back", key_gap);
+			UiDraw::KeyHint(ctx_.renderer, cx - w_back * 0.5f, cy + line_gap * 2.f, TextStyle::Caption,
+				"ESC", "Back", GameColors::kSelectAccent, GameColors::kTextGray,
+				GameColors::kOutlineBlack, key_gap);
 		}
 		else {
-			ctx_.renderer.SubmitText({ cx, cy + line_gap, Anchor::Center, TextStyle::Caption,
-				"ESC  Back", GameColors::kTextHint });
+			const float w_back = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ESC", "Back", key_gap);
+			UiDraw::KeyHint(ctx_.renderer, cx - w_back * 0.5f, cy + line_gap, TextStyle::Caption,
+				"ESC", "Back", GameColors::kSelectAccent, GameColors::kTextGray,
+				GameColors::kOutlineBlack, key_gap);
 		}
 	}
 

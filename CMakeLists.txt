@@ -85,7 +85,7 @@ add_executable(rfs_demo
 )
 set_target_properties(rfs_demo PROPERTIES
 	OUTPUT_NAME "RhythmFruitShop"
-	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 target_link_libraries(rfs_demo PRIVATE
     rfs_app

@@ -14,7 +14,7 @@ namespace rfs {
 		TapCommandBuffer buffer{};
 
 		int best_idx = -1;
-		std::int32_t best_dt = JudgeWindows::kGood + 1;
+		std::int32_t best_dt = config_.good_window_ms + 1;
 
 		const auto& notes = chart.Notes();
 		for (int i = next_idx; i < static_cast<int>(notes.size()); ++i) {
@@ -23,8 +23,8 @@ namespace rfs {
 
 			const std::int32_t effective = notes[i].time_ms + song_offset_ms;
 			const std::int32_t dt = std::abs(effective - input_song_time_ms);
-			if (dt > JudgeWindows::kGood) {
-				if (effective - input_song_time_ms > JudgeWindows::kGood) break;
+			if (dt > config_.good_window_ms) {
+				if (effective - input_song_time_ms > config_.good_window_ms) break;
 				continue;
 			}
 			if (dt < best_dt) {
@@ -37,8 +37,8 @@ namespace rfs {
 			return buffer;
 
 		JudgeResult r =
-			best_dt <= JudgeWindows::kPerfect ? JudgeResult::Perfect :
-			best_dt <= JudgeWindows::kGreat ? JudgeResult::Great :
+			best_dt <= config_.perfect_window_ms ? JudgeResult::Perfect :
+			best_dt <= config_.great_window_ms ? JudgeResult::Great :
 			JudgeResult::Good;
 		buffer.Push(JudgeCommand{
 			best_idx, r, JudgeCommand::Kind::TapHit
@@ -59,7 +59,7 @@ namespace rfs {
 
 		// deal with all notes that have passed the "dead-line"
 		while (next_idx < static_cast<int>(notes.size()) &&
-			song_time_ms - (notes[next_idx].time_ms + song_offset_ms) > JudgeWindows::kGood) {
+			song_time_ms - (notes[next_idx].time_ms + song_offset_ms) > config_.good_window_ms) {
 			if (!note_resolved[next_idx]) {
 				buffer.Push(JudgeCommand{ next_idx, JudgeResult::Miss, JudgeCommand::Kind::AutoMiss });
 			}

@@ -8,7 +8,7 @@ namespace rfs {
 
 	enum class InputAction : std::uint8_t {
 		Lane0, Lane1, Lane2, Lane3,
-		Escape, Enter, ToggleDebug, CycleCalibration,
+		Escape, Enter, ToggleDebug,
 		NavUp, NavDown, NavLeft, NavRight,
 		Level1, Level2, Level3, Level4
 	};

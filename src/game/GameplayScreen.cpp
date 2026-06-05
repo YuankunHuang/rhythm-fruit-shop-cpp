@@ -33,7 +33,7 @@ namespace rfs {
 		const float last_note_ms = notes.empty()
 			? 0.f
 			: static_cast<float>(notes.back().time_ms);
-		gameplay_end_ms_ = last_note_ms + static_cast<float>(JudgeWindows::kGood);
+		gameplay_end_ms_ = last_note_ms + static_cast<float>(judge_.Config().good_window_ms);
 		chart_end_ms_ = gameplay_end_ms_ + GameConfig::kSongEndDelayMs;
 		if (chart_end_ms_ <= 0.f) chart_end_ms_ = 1.f;
 	}
@@ -216,7 +216,7 @@ namespace rfs {
 		const auto& notes = chart_.Notes();
 		while (snapshot_.next_idx < note_count) {
 			const std::int32_t effective = notes[snapshot_.next_idx].time_ms + ctx_.session.song_offset_ms;
-			if (judge_time_ms - effective <= JudgeWindows::kGood) {
+			if (judge_time_ms - effective <= judge_.Config().good_window_ms) {
 				break;
 			}
 			++snapshot_.next_idx;
@@ -304,11 +304,11 @@ namespace rfs {
 		// Render all Hit fx
 		RenderHitFx();
 
-		// Judge + Combo (upper center)
-		const float cx = ui_.content_center_x;
-		const float judge_anchor_y = ui_.content_top + ui_.win_h * 0.35f;
+	// Judge + Combo (upper center)
+	const float cx = ui_.content_center_x;
+	const float judge_anchor_y = ui_.content_top + ui_.win_h * 0.35f;
 
-		if (judge_display_ms_ > 0.f && last_judge_ != JudgeResult::Miss) {
+	if (!paused_ && judge_display_ms_ > 0.f && last_judge_ != JudgeResult::Miss) {
 			const char* text = "";
 			uint32_t color = GameColors::kTextWhite;
 			switch (last_judge_) {
@@ -345,8 +345,8 @@ namespace rfs {
 					outline_c });
 			}
 		}
-		// Miss: treated a bit differently
-		if (judge_display_ms_ > 0.f && last_judge_ == JudgeResult::Miss) {
+	// Miss: treated a bit differently
+	if (!paused_ && judge_display_ms_ > 0.f && last_judge_ == JudgeResult::Miss) {
 			const float fade = std::clamp(judge_display_ms_ / GameConfig::kJudgeDisplayMs, 0.f, 1.f);
 			uint32_t fill_c, outline_c;
 			GameColors::TextColorsWithFade(GameColors::kMiss, GameColors::kOutlineBlack, fade, fill_c, outline_c);
@@ -381,24 +381,13 @@ namespace rfs {
 			return;
 		}
 
-		if (is_in_lead_in_ || is_in_outro_ || result_pushed_) return;
+	// Pause is allowed at any time, including lead-in.
+	if (evt.action == InputAction::Escape) {
+		ctx_.ui.NavigateTo(std::make_unique<PauseScreen>(ctx_));
+		return;
+	}
 
-		// exit
-		if (evt.action == InputAction::Escape) {
-			ctx_.ui.NavigateTo(std::make_unique<PauseScreen>(ctx_));
-			return;
-		}
-
-		// calibration
-		if (evt.action == InputAction::CycleCalibration && evt.pressed) {
-			static int i = 0;
-			const auto& kSteps = GameConfig::kCalibrationSteps;
-			for (; i < std::size(kSteps); ++i) {
-				if (kSteps[i] == ctx_.session.song_offset_ms) break;
-			}
-			ctx_.session.song_offset_ms = kSteps[(i + 1) % std::size(kSteps)];
-			return;
-		}
+	if (is_in_lead_in_ || is_in_outro_ || result_pushed_) return;
 
 		// lane
 		int lane = -1;

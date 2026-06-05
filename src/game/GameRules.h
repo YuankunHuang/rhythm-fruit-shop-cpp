@@ -7,20 +7,31 @@
 namespace rfs {
 
 	namespace Scoring {
-		inline int32_t EarnScore(JudgeResult result, int32_t combo) {
-			int base = 0;
+
+		// base score - integers
+		inline constexpr int32_t kBasePerfect = 1000;
+		inline constexpr int32_t kBaseGreat = 700;
+		inline constexpr int32_t kBaseGood = 300;
+
+		// Q16 fixed-point multiplier for combo bonus
+		inline constexpr int32_t kOneQ16 = 1 << 16;
+		inline constexpr int32_t kComboStepQ16 = 328; // 1 combo -> +0.5%
+		inline constexpr int32_t kComboCap = 100; // max combo considered for bonus
+
+		inline int32_t BaseScore(JudgeResult result) noexcept {
 			switch (result) {
-			case JudgeResult::Perfect: base = 300; break;
-			case JudgeResult::Great: base = 200; break;
-			case JudgeResult::Good: base = 100; break;
+			case JudgeResult::Perfect: return kBasePerfect;
+			case JudgeResult::Great: return kBaseGreat;
+			case JudgeResult::Good: return kBaseGood;
+			default: return 0; // miss or invalid
 			}
+		}
 
-			float multiplier = 1.0f;
-			if (combo >= 100) multiplier = 2.0f;
-			else if (combo >= 50) multiplier = 1.5f;
-			else if (combo >= 20) multiplier = 1.2f;
-
-			return static_cast<int>(base * multiplier);
+		inline int32_t EarnScore(JudgeResult result, int32_t combo) noexcept {
+			const int32_t base = BaseScore(result);
+			const int32_t capped = combo < kComboCap ? combo : kComboCap;
+			const int32_t multiplier_q16 = kOneQ16 + capped * kComboStepQ16;
+			return static_cast<int32_t>((static_cast<int64_t>(base) * multiplier_q16) >> 16); // int64 to prevent overflow during multiplication
 		}
 	}
 
