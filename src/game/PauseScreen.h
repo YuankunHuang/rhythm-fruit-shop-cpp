@@ -24,5 +24,6 @@ namespace rfs {
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};
 		bool is_back_to_root_ = false;
+		bool was_playing_     = false;
 	};
 }

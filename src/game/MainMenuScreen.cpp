@@ -2,6 +2,7 @@
 #include "ChartSelectScreen.h"
 #include "GameColors.h"
 #include "GameConfig.h"
+#include "UiDraw.h"
 
 namespace rfs {
 
@@ -35,10 +36,23 @@ namespace rfs {
 			Anchor::Center, TextStyle::Title,
 			"Rhythm Fruit Shop", GameColors::kTextWhite });
 
-		ctx_.renderer.SubmitText({
-			ui.content_center_x, ui.content_center_y + line_gap,
-			Anchor::Center, TextStyle::Caption,
-			"ENTER: Select Song          ESC: Quit", GameColors::kTextGray });
+		// Key hints in a centered row: [ENTER] Select Song    [ESC] Quit
+		const float cx = ui.content_center_x;
+		const float hint_y = ui.content_center_y + line_gap;
+		const float key_gap = ui.Px(8.f);
+		const float hint_sep = ui.font_body * 1.4f;
+
+		const float w_enter = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ENTER", "Select Song", key_gap);
+		const float w_esc = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ESC", "Quit", key_gap);
+		float x = cx - (w_enter + hint_sep + w_esc) * 0.5f;
+
+		x += UiDraw::KeyHint(ctx_.renderer, x, hint_y, TextStyle::Caption,
+			"ENTER", "Select Song", GameColors::kSelectAccent, GameColors::kTextGray,
+			GameColors::kOutlineBlack, key_gap);
+		x += hint_sep;
+		UiDraw::KeyHint(ctx_.renderer, x, hint_y, TextStyle::Caption,
+			"ESC", "Quit", GameColors::kSelectAccent, GameColors::kTextGray,
+			GameColors::kOutlineBlack, key_gap);
 	}
 
 	void MainMenuScreen::HandleInput(const InputEvent& evt) {

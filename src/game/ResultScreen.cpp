@@ -84,9 +84,12 @@ namespace rfs {
 		y += line_h;
 		DrawStatRow(ctx_.renderer, label_x, value_x, y, "MISS", std::to_string(result_.miss), GameColors::kMiss);
 
-		ctx_.renderer.SubmitText({ ui.content_center_x, panel_y + panel_h - pad,
-			Anchor::BottomCenter, TextStyle::Caption,
-			"ENTER  Back to Song Select", GameColors::kTextHint });
+		const float key_gap = ui.Px(8.f);
+		const float hint_y = panel_y + panel_h - pad - ui.font_caption * 0.5f;
+		const float w_back = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ENTER", "Back to Song Select", key_gap);
+		UiDraw::KeyHint(ctx_.renderer, ui.content_center_x - w_back * 0.5f, hint_y, TextStyle::Caption,
+			"ENTER", "Back to Song Select", GameColors::kSelectAccent, GameColors::kTextGray,
+			GameColors::kOutlineBlack, key_gap);
 	}
 
 	void ResultScreen::HandleInput(const InputEvent& evt) {

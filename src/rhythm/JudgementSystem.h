@@ -8,12 +8,12 @@
 #include "JudgeCommandBuffer.h"
 
 namespace rfs {
-	namespace JudgeWindows {
-		constexpr int32_t kPerfect = 50; // +-50ms
-		constexpr int32_t kGreat = 100;
-		constexpr int32_t kGood = 150;
-		// greater diff -> miss
-	}
+
+	struct JudgementConfig {
+		std::int32_t perfect_window_ms = 50;
+		std::int32_t great_window_ms = 100;
+		std::int32_t good_window_ms = 150;
+	};
 
 	struct GameplaySnapshot {
 		int next_idx = 0;
@@ -22,6 +22,10 @@ namespace rfs {
 
 	class JudgementSystem {
 	public:
+		explicit JudgementSystem(JudgementConfig config = {}) noexcept : config_(config) {}
+
+		const JudgementConfig& Config() const noexcept { return config_; }
+
 		TapCommandBuffer JudgeTaps(
 			const FrozenChart& chart,
 			std::span<const std::uint8_t> note_resolved,
@@ -36,5 +40,8 @@ namespace rfs {
 			int next_idx,
 			std::int32_t song_time_ms,
 			std::int32_t song_offset_ms = 0) const;
+
+	private:
+		JudgementConfig config_;
 	};
 }

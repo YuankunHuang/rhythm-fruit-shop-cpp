@@ -1,55 +1,62 @@
 ---
 title: "Rhythm Fruit Shop C++ Core - GDD + TDD"
-subtitle: "Senior C++ Game Programmer Portfolio Sprint"
+subtitle: "A C++ game programmer's native rhythm core, built to grow toward high-performance systems work"
 author: "Yuankun Huang"
-date: "2026-05-21"
-version: "v2.0"
+date: "2026-06-05"
+version: "v3.0"
 ---
 
 # Rhythm Fruit Shop C++ Core - GDD + TDD
 
-**Document version:** v2.0 (production-grade rewrite of v1.0)
-**Target delivery:** 48-hour native C++ portfolio sprint
-**Primary purpose:** Demonstrate senior-level engineering judgment for C++ Game Programmer roles via a small but production-shaped rhythm-game core.
-**Positioning:** A native C++20 rhythm-game core engineered around a deterministic timing pipeline, a strictly inverted dependency graph between gameplay and platform layers, a command-driven judgment flow, and contractually-enforced zero hot-path heap allocations.
+**Document version:** v3.0 (reconciled line-by-line with the shipped code; see changelog at end)
+**Author background:** C++ game programmer with 5 years of Unity/C# mobile game-client experience. This is my first native C++ project, started deliberately to build depth in high-performance and systems-level engineering - the foundation I want for simulation/engine-adjacent work over time.
+**What this is:** A native C++20 rhythm-game core organized around a deterministic timing pipeline, a strictly inverted dependency graph between gameplay and platform layers, and a command-driven judgment flow.
+
+> **Status tags.** Every feature below carries one of three tags, so a reviewer can tell exactly what is built versus planned:
+>
+> - **[Shipped]** - present and verified in the current code.
+> - **[Planned]** - committed near-term work with a concrete acceptance signal; tracked in the wrap-up backlog (§30).
+> - **[v2]** - deliberately deferred, with a recorded trigger condition.
+>
+> If a line is not tagged [Shipped], it is not yet in the binary. This document is held to one rule above all: **it never claims something the code does not deliver.** Where v2.0 of this document over-promised, v3.0 corrects it.
 
 ---
 
 # Executive Brief
 
-This project is not a commercial game and not a custom engine. It is a **C++ game-technology contract**: small enough to ship inside a 48-hour window, but architected as a slice of production code, not a tutorial.
+This is not a commercial game and not a custom engine. It is a small, native C++ rhythm core, built as a slice of production-shaped code rather than a tutorial, and used as the project where I move from Unity/C# game-client work into native C++ and systems thinking.
 
-A reviewer (hiring manager, senior engineer, technical interviewer) opening the repository should reach the following conclusions inside ten minutes:
+A reviewer (hiring manager, engineer, technical interviewer) opening the repository should be able to verify the following inside ten minutes:
 
-1. The candidate models rhythm-game timing as a layered clock pipeline, not as `dt` accumulation.
-2. The candidate inverts the dependency graph so gameplay code is unaware of any concrete window/audio/render backend.
-3. The candidate treats memory and update cost as contracts, not as aspirations - the project carries machinery to *prove* zero hot-path heap allocation, not just to claim it.
-4. The candidate writes systems as decision pipelines (read -> decide -> commit), not as mutually-mutating subsystems.
-5. The candidate distinguishes between v1 production scope and v2 evolution paths, and documents both explicitly.
+1. Rhythm-game timing is modeled as a layered clock pipeline driven by the audio sample cursor, not as `dt` accumulation. **[Shipped]**
+2. The dependency graph is inverted so gameplay code is unaware of any concrete window/audio/render backend, and this is enforced at CMake configure time. **[Shipped]**
+3. Judgment is written as a pure decision function that returns command buffers, separating "decide" from "commit". **[Shipped]**
+4. Memory and update cost are being turned into enforced contracts (zero hot-path heap allocation, measured update/latency budgets), not just claimed. **[Planned]**
+5. The project distinguishes what is shipped from what is planned from what is deferred, and tags every claim accordingly.
 
-The visual deliverable is a four-lane falling-note demo with fruit-shop theming. The engineering deliverable is what is being graded.
+The visual deliverable is a four-lane falling-note demo with fruit-shop theming. The engineering substance - timing, layering, decision pipeline, and the in-progress performance contracts - is what the document is about.
 
-## Engineering Invariants
+## Engineering principles
 
-These invariants are **non-negotiable**. Each must be enforceable by build-time, compile-time, runtime, or test-time signal. "Soft" principles are not invariants and have no place here.
+These are the load-bearing principles of the project. The first three are enforced today; the last two are committed work with a defined acceptance signal. Each carries a status tag and an enforcement mechanism.
 
-| # | Invariant | Enforcement |
-|---|---|---|
-| I-01 | The rhythm core (`rfs_core`) MUST NOT link, include, or reference SFML, miniaudio, or any OS library. | CMake topology + per-target link allow-list (see §14). Build break on violation. |
-| I-02 | Song time is authoritative. Gameplay MUST NEVER advance time by frame `dt`. | `SongClock::AdvanceByDelta` does not exist. Code search invariant + unit test. |
-| I-03 | Input events MUST carry a host-monotonic capture timestamp; `eventSongTimeMs` MUST be derived by reverse-mapping that timestamp through the smoothed clock. | `InputEvent` struct has no default constructor for `eventHostNs`; reverse mapping is the only public path (§19). |
-| I-04 | The judgment pipeline MUST be expressible as a pure function `(FrozenChart, RuntimeView, LaneInputs, SongTime) -> JudgmentCommandBuffer`. No mutation inside the judgment system. | Static type contract on `JudgmentSystem::Judge` (returns by value). Unit test passes a `const RuntimeView&`. |
-| I-05 | Inside `GameplayUpdate`, the global heap allocator MUST observe zero allocations in debug builds. | `RFS_HOTPATH_BEGIN/END` overrides `operator new/delete` with a thread-local counter; non-zero on scope exit triggers `RFS_FATAL` with stack trace. |
-| I-06 | All per-frame scratch memory MUST come from a `std::pmr::monotonic_buffer_resource` with a 64KB stack-backed buffer, reset at frame boundary. | Compile-time concept check `RFS_ASSERT_PMR_ONLY` on hot-path containers; runtime arena high-water-mark assert. |
-| I-07 | The chart data structure MUST be partitioned into an immutable `FrozenChart` (loaded once, `const` thereafter) and mutable per-session runtime arrays. | `FrozenChart` exposes only `std::span<const ...>`. Mutating it is a compile error. |
-| I-08 | The build MUST produce a `rfs_tests` binary that links neither window nor audio device, and that exercises the rhythm core with a `MockAudioBackendClock`. | CMake target `rfs_tests` has no SFML/miniaudio dependency. CI gate. |
+| # | Principle | Status | Enforcement |
+|---|---|---|---|
+| I-01 | The rhythm core (`rfs_core`) does not link, include, or reference SFML, miniaudio, or any OS library. | [Shipped] | CMake per-target link allow-list + `rfs_assert_no_forbidden_deps` configure-time guard (§14, §16.3). Build break on violation. |
+| I-02 | Authoritative song time comes from the audio clock, never from frame `dt`. (A pre-roll lead-in countdown uses `dt`, but it never feeds judgment - see note below.) | [Shipped] | Judgment reads `event_song_time_ms` mapped from the smoothed clock; there is no `AdvanceByDelta` path into song time. |
+| I-03 | Input events carry a host-monotonic capture timestamp; `event_song_time_ms` is derived by reverse-mapping that timestamp through the smoothed clock. | [Shipped] | `SmoothedSongClock::HostNsToSongTimeMs` is the only mapping path; applied once per event in the main loop (§19). |
+| I-04 | Judgment is a pure function: it reads `const` runtime state and returns a command buffer by value; it mutates nothing. | [Shipped] | `JudgementSystem::JudgeTaps` / `DetectMisses` are `const` and return `StaticCommandBuffer` by value (§22). |
+| I-05 | Inside the gameplay decide/commit path, the global heap allocator observes zero allocations in debug builds. | [Planned] | `RFS_HOTPATH_BEGIN/END` + a debug `operator new` override with a thread-local counter; non-zero delta traps. Acceptance: 60 s of play, zero counted allocations (§26). |
+| I-06 | Per-frame scratch memory comes from a stack-backed `std::pmr::monotonic_buffer_resource`, reset at the frame boundary. | [Planned] | `FramePmrArena` (64 KB) + high-water-mark assert (§26). |
+| I-07 | Chart data is split into an immutable `FrozenChart` (loaded once, `const` thereafter) and mutable per-session runtime arrays. | [Shipped] | `FrozenChart` exposes only `std::span<const ...>`; mutation is a compile error (§17). |
+| I-08 | `rfs_tests` links neither a window nor an audio device, and exercises the rhythm core headless. | [Shipped, extending] | CMake target `rfs_tests` links only `rfs_core` + `rfs_platform_iface` + doctest (§16). A headless `GameplaySession` + a CI test gate are [Planned] (§29). |
 
-These eight invariants - and how the document enforces each - are the actual senior-engineering signal in this project.
+> **Note on I-02.** During the lead-in (before audio playback starts) the gameplay screen counts down using frame `dt`. This is intentional: it is pre-song UI timing and is never used to judge a note. Once playback begins, all note positions and judgments are functions of song time sampled from `SmoothedSongClock`.
 
 ## Repository identity
 
 - Repo name: `rhythm-fruit-shop-cpp-core`
-- Tagline: Native C++20 rhythm-game core with a deterministic clock pipeline, inverted platform boundary, command-driven judgment, and contractually-zero hot-path allocations.
+- Tagline: Native C++20 rhythm-game core with a deterministic, audio-cursor-driven clock pipeline, an inverted platform boundary enforced at build time, and a command-driven judgment flow.
 
 # Part I - Game Design Document (GDD)
 
@@ -65,51 +72,57 @@ The C++ build is a **native systems rewrite**, not a port of any HTML prototype.
 
 Within 30 seconds of play, the player understands the game. Within 10 minutes of code review, an engineer understands:
 
-- How the application boots and how services are wired.
-- How song time is established, smoothed, and consumed.
-- How chart data is loaded, frozen, and queried.
-- How the per-frame pipeline reads inputs, decides judgments, and commits state.
-- Where the project draws its hot-path memory contract and how it is enforced.
+- How the application boots and how services are wired. **[Shipped]**
+- How song time is established, smoothed, and consumed. **[Shipped]**
+- How chart data is loaded, frozen, and queried. **[Shipped]**
+- How input is timestamped, reverse-mapped to song time, and judged as a pure decision step. **[Shipped]**
+- Where the project intends to draw its hot-path memory contract and how it will be enforced. **[Planned]**
 
 ## 2. Product goals
 
 ### 2.1 Primary goal
 
-Ship a compact, playable C++20 rhythm core that supports a job application for a senior-leaning C++ Programmer role by demonstrating production engineering judgment in a small surface area.
+Ship a compact, playable native C++20 rhythm core that demonstrates - in a small, reviewable surface area - that I can carry game-domain experience into native C++ and systems-level engineering: deterministic timing, a clean dependency boundary, a decision-pipeline architecture, and (in progress) enforced performance contracts.
 
 ### 2.2 Secondary goals
 
-- Establish a reusable native C++ project template (CMake, platform inversion, diagnostics) for subsequent Unreal/C++ or engine-module work.
-- Convert a previously-prototyped rhythm gameplay idea into an architecture that survives review by a senior engineer.
-- Produce a public GitHub artifact that can be linked from resume, cover letter, and LinkedIn outreach.
-- Provide concrete C++ code surfaces - timing, command pipeline, memory contracts, tests - to anchor an interview conversation.
+- Establish a reusable native C++ project template (CMake topology, platform inversion, diagnostics) for later engine-module or simulation-adjacent work.
+- Turn a rhythm gameplay idea into an architecture that holds up to engineering review.
+- Produce a public GitHub artifact that can be linked from a resume and discussed in depth in an interview.
+- Provide concrete C++ surfaces - timing, command pipeline, memory contracts, tests - to anchor a technical conversation.
 
-### 2.3 Out of scope (v1)
+### 2.3 Scope status
 
-The following are explicitly out of v1 scope. Each has a recorded evolution path in §37 - none of them are "left for later because we ran out of time".
+The project deliberately keeps a small surface. What follows is the honest status of each axis.
 
-- Audio-callback-driven SPSC anchor pipeline (v1 uses main-thread polling smoothed clock, see §18.8 for numerical justification).
-- Hold/Slide/Flick note types (v1 supports `Tap` only).
-- Multiple charts and song selection UI (v1 ships one demo chart).
-- Replay recorder/player (v1 carries the design hook but no implementation, see §38).
-- Property-based test harness (v1 ships unit tests + one macro invariant test, see §29).
-- Networked or online play.
-- Custom engine, custom renderer, custom audio backend.
+**Shipped beyond the original v1 plan:**
+
+- **[Shipped]** Multiple charts and a song-selection flow. The repo ships 41 charts (`assets/charts/catalog.json`) and a full `ChartSelectScreen` with difficulty selection. (v2.0 of this document listed this as out of scope; it shipped, so it is promoted here to a delivered feature.)
+- **[Shipped]** Async chart/audio loading screen, window-resize handling, calibration offset UI in the pause menu.
+
+**Deferred, each with a trigger in §37:**
+
+- **[v2]** Audio-callback-driven SPSC anchor pipeline (v1 uses a main-thread-polled smoothed clock; see §18.8 for the numerical justification).
+- **[v2]** Hold/Slide/Flick note types (v1 supports `Tap` only).
+- **[v2]** Replay recorder/player (design hook only; see §38).
+- **[v2]** Property-based / fuzz test harness.
+- **[v2]** Networked or online play.
+- **[v2]** Custom engine, custom renderer, custom audio backend.
 
 ## 3. Target audience
 
 | Audience | What they should observe |
 |---|---|
-| Hiring manager | A scoped, shipped artifact with production posture - not coursework. |
-| Senior engineer | Inverted dependency graph, layered clock model, command-driven judgment, enforced memory contracts. |
-| Recruiter | Repo description and resume bullets align with C++ Programmer keywords. |
+| Hiring manager | A scoped, shipped, playable artifact - not coursework - from someone moving into native C++. |
+| Engineer | Inverted dependency graph, layered clock model, command-driven judgment (all shipped); memory/latency contracts in progress with clear acceptance gates. |
+| Recruiter | Repo description and resume bullets describe only what is built, tagged by status. |
 | Player | Inputs feel responsive; judgments feel fair; the demo loop is legible without instruction. |
 
 ## 4. Core pillars
 
 ### 4.1 Timing precision
 
-Every judgment is the result of an explicit signed delta between an input host timestamp (mapped into song time) and a note's `targetTimeMs`. There is no frame-accumulation path.
+Every judgment is the result of an explicit signed delta between an input host timestamp (mapped into song time) and a note's `time_ms` (plus the calibration offset). There is no frame-accumulation path. **[Shipped]**
 
 ### 4.2 Input fidelity
 
@@ -119,99 +132,115 @@ Input events are timestamped at *capture*, not at frame consumption. Reverse-map
 
 Each module has a small public surface and a documented dependency direction. A reviewer can draw the architecture diagram from `CMakeLists.txt` alone and not be wrong.
 
-### 4.4 Performance discipline
+### 4.4 Performance discipline [Planned]
 
-Performance is expressed as a budget table (§26.3) with measurement tooling and breach actions. "Cache-friendly" and "lightweight" are not used as nouns.
+Performance is to be expressed as a budget table (§26.5) with measurement tooling and breach actions, not as adjectives. The measurement layer (frame-time p50/p99, input-to-judge latency, hot-path allocation count) is committed work tracked in §30, not yet in the binary.
 
 ### 4.5 Engineering candor
 
-Every shortcut taken to fit the 48-hour window is recorded as a v1-vs-v2 distinction in §37. A reviewer never has to guess what was "left out".
+What is built, what is planned, and what is deferred are tagged inline and summarized in §37. A reviewer never has to guess what is "real" versus "aspirational" - that is the entire point of the v3.0 reconciliation.
 
 ## 5. Gameplay summary
 
-### 5.1 Core loop
+### 5.1 Core loop [Shipped]
 
-1. Boot, select demo chart, validate, warm assets.
-2. Audio playback begins; song clock anchors are established.
-3. Each frame: poll inputs (timestamped) -> spawn due notes -> judge inputs -> commit -> retire misses -> rebuild view-model -> render.
-4. Song completes; results screen renders summary and allows restart.
+1. Main menu -> song select; the chosen chart is validated and assets are warmed on the loading screen.
+2. Audio playback begins; the smoothed song clock is armed from the audio sample cursor.
+3. Each frame: poll timestamped inputs -> map each to song time -> judge taps (on input) and detect misses (on update) as pure decisions -> apply results -> render notes whose position is a function of song time.
+4. Song completes; the result screen renders the summary and returns to song select.
 
 ### 5.2 Per-frame pipeline
 
+**Shipped today.** The decision/commit split exists, but the logic currently lives inside `GameplayScreen` rather than a standalone session object:
+
 ```text
-Read    : snapshot SongTime + InputEvent span
-Decide  : JudgmentSystem (pure)  -> JudgmentCommandBuffer
-          MissDetector  (pure)   -> MissCommandBuffer
+Application::Run
+  Tick smoothed clock from audio sample anchor
+  Poll inputs; map each event_host_ns -> event_song_time_ms
+  GameplayScreen::HandleInput : JudgeTaps (pure) -> TapCommandBuffer -> ApplyCommand
+  GameplayScreen::Update      : DetectMisses (pure) -> MissCommandBuffer -> ApplyCommand; advance next_idx
+  GameplayScreen::Render      : project notes/HUD directly from chart + snapshot
+```
+
+**Planned (§24, §30).** Extracting a headless `GameplaySession` that makes the phase ordering explicit and side-effect-isolated:
+
+```text
+Read    : snapshot song time + this frame's input span
+Decide  : JudgementSystem (pure) -> TapCommandBuffer ; MissDetector (pure) -> MissCommandBuffer
 Commit  : RuntimeStore::Apply(commands)              # only mutation point
-Retire  : LaneCursors advance past judged/missed
-Project : GameplayViewModel rebuilt for renderer
+Retire  : lane cursors advance past judged/missed
+Project : view model rebuilt for the renderer
 ```
 
-This ordering is fixed and documented; deviation is a review-blocking smell (see §24).
+The motivation for the extraction is testability (it unlocks the headless perfect-run invariant test, §29) and giving the hot-path allocation guard a clean scope (§26). This is **[Planned]**, not shipped.
 
-### 5.3 Controls
+### 5.3 Controls [Shipped]
 
-| Action | Default | Alternate |
-|---|---:|---:|
-| Lane 0 | D | Left arrow |
-| Lane 1 | F | Down arrow |
-| Lane 2 | J | Up arrow |
-| Lane 3 | K | Right arrow |
-| Pause / resume | Esc | P |
-| Restart song | R | - |
-| Toggle debug overlay | F1 | - |
-| Cycle calibration offset | F2 | - |
+Actual key bindings, mapped in `SfmlInputSource` to the `InputAction` enum:
 
-### 5.4 Game state machine
+| Action | Key |
+|---|---|
+| Lanes 0-3 | D / F / J / K |
+| Confirm (menu / loading / result) | Enter |
+| Pause / resume / back | Esc |
+| Song select: change song | Up / Down |
+| Song select: change difficulty | Left / Right |
+| Difficulty quick-select | 1 / 2 / 3 / 4 |
+| Calibration offset (in pause menu) | Left / Right |
+| Toggle debug overlay | F1 |
 
-States and transitions are explicit; entry/exit invariants are part of the contract.
+Note: the arrow keys are navigation, not alternate lane keys; there is no separate Restart or F2-calibration binding. Calibration is adjusted with Left/Right inside the pause overlay.
 
-| State | Entry invariant | Exit invariant |
+### 5.4 Screen flow [Shipped]
+
+Navigation is a screen stack managed by `UIManager` (`NavigateTo` / `GoBack` / `GoBackToRoot` / `ReplaceTop`, with `FlushPending()` applied once per frame after input). There is no separate `StateStack`/`IGameState` layer; screens implement `IScreen`.
+
+| Screen | Role | Entry / exit notes |
 |---|---|---|
-| Boot | `Logger`/`AppConfig`/platform services constructed; no gameplay objects exist. | All platform services pass health check. |
-| MainMenu | Audio idle; no `GameplaySession` allocated. | User confirmed start. |
-| Loading | `FrozenChart` and audio asset loading in flight; no gameplay rendered. | `FrozenChart` validated; audio buffer ready; `SmoothedSongClock` armed. |
-| Playing | `GameplaySession` owns runtime arrays; `SmoothedSongClock` running. | Song completion or user transition. |
-| Paused | `ChartClock` frozen; no anchors written; renderer dims overlay. | Resume reanchors the clock as a hard reanchor. |
-| Results | Session arrays still alive (read-only); summary computed. | User chose restart or exit. |
-| Error | Display structured error; no gameplay objects exist. | User acknowledged. |
+| MainMenuScreen | Title + start prompt | Enter -> ChartSelect. Audio idle. |
+| ChartSelectScreen | Song + difficulty selection | Enter -> Loading (selected chart). |
+| LoadingScreen | Async chart + audio load | On success -> replaces top with Gameplay; on failure shows the error in place (Esc to go back). |
+| GameplayScreen | Falling-note play | Song clock running; Esc -> pushes Pause overlay; song end -> replaces top with Result. |
+| PauseScreen | Overlay (`IsOverlay() == true`) | Freezes the song clock; Esc resumes; Enter quits to menu. |
+| ResultScreen | Score / accuracy / grade summary | Enter -> back to song select. |
 
-Allowed transitions:
+Actual transitions:
 
 ```text
-Boot -> MainMenu -> Loading -> Playing
-Playing <-> Paused
-Playing -> Results -> MainMenu
-* -> Error (any non-recoverable failure)
+MainMenu -> ChartSelect -> Loading -> Gameplay -> Result -> (ChartSelect)
+Gameplay -> Pause (overlay) -> Gameplay
 ```
+
+Boot work (constructing platform services, navigating to MainMenu) happens in `Application::Run` rather than as a distinct Boot screen. Load failures are surfaced on LoadingScreen rather than a dedicated Error screen; a structured Error state is recorded as **[v2]**.
 
 ## 6. Mechanics
 
 ### 6.1 Lanes
 
-The demo runs four vertical lanes (`kMaxLanes = 8` is reserved in code for forward compatibility, but v1 ships 4). Each note belongs to exactly one lane. Lane-to-key mapping is data-driven via `InputBindings` (§19) and SHALL NOT be hard-coded inside any gameplay system.
+The demo runs four vertical lanes (`GameConfig::kLaneCount = 4`). Each note belongs to exactly one lane. Lane-to-key mapping (D/F/J/K) currently lives in `SfmlInputSource`; promoting it to a data-driven `InputBindings` table is **[v2]**.
 
 ### 6.2 Note definition
 
-A note is described entirely by immutable data:
+A note is described entirely by immutable data. Actual `NoteDef` (`rhythm/FrozenChart.h`):
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | `NoteId` (`uint32_t`) | Stable chart-local note identifier; unique per chart. |
-| `lane` | `LaneIndex` (`uint8_t`) | Lane index, `< laneCount`. |
-| `targetTimeMs` | `Milliseconds` (`int32_t`) | Song time at which the note should be hit. |
-| `type` | `NoteType` | v1: `Tap`. Reserved: `Hold`, `Slide`, `Flick`. |
-| `visualId` | `uint16_t` | Visual variant index (fruit type). |
+| `id` | `std::uint32_t` | Stable chart-local note identifier. |
+| `time_ms` | `std::int32_t` | Song time at which the note should be hit. |
+| `lane` | `std::uint8_t` | Lane index, `< lane_count`. |
+| `visual_id` | `std::uint16_t` | Visual variant index (fruit type). |
+
+There is no `type` field yet (Tap is the only note kind; Hold/Slide/Flick are **[v2]**). A `static_assert` on `sizeof(NoteDef)` and a dedicated `NoteType` enum are **[Planned]** polish (§17).
 
 ### 6.3 Spawn rule
 
-A note becomes spawnable when:
+A note is visible/active when:
 
 ```text
-songTimeMs >= targetTimeMs - approachTimeMs
+songTimeMs >= timeMs - approachTimeMs
 ```
 
-Default `approachTimeMs = 1600`. The `SpawnScheduler` advances a per-chart monotonic cursor; it MUST NEVER scan the full chart vector each frame (§21).
+`approachTimeMs` is selected from a scroll-speed table (`GameConfig::kSpeedLevels`) rather than read from the chart header. Traversal uses a monotonic `next_idx` cursor (the renderer scans forward from it within the approach window); the full chart vector is never re-scanned from zero each frame. A dedicated `SpawnScheduler`/`NoteTimeline` object that formalizes this is **[Planned]** as part of the headless session (§21, §24); the cursor behavior itself is **[Shipped]**.
 
 ### 6.4 Note position derivation
 
@@ -226,36 +255,38 @@ This eliminates accumulated drift and makes rendering deterministic given a song
 
 ### 6.5 Judgment windows
 
-Default windows (tunable via `JudgmentConfig`, see §22.2):
+Default windows, injected via `JudgementConfig` (see §22.2): **[Shipped]**
 
 | Judgment | `|delta|` |
 |---|---:|
-| Perfect | `<= 35 ms` |
-| Great | `<= 70 ms` |
-| Good | `<= 110 ms` |
-| Miss | `> missWindowMs` (`130 ms`) or note crosses miss boundary unjudged |
+| Perfect | `<= 50 ms` |
+| Great | `<= 100 ms` |
+| Good | `<= 150 ms` |
+| Miss | `> 150 ms` (the Good window doubles as the miss boundary), or note passes the boundary unjudged |
+
+v1 uses a single boundary for "too far to count as a hit" and "now missed" (both 150 ms). A separate, wider miss window (a dead zone) is **[v2]** and would only require changing a `JudgementConfig` default plus the corresponding test.
 
 ### 6.6 Input judgment algorithm (lane-local)
 
-For each input event in the current frame, in event order:
+For each lane key-press (handled in `GameplayScreen::HandleInput`): **[Shipped]**
 
 1. Map `action` to `lane`.
-2. Convert `eventHostNs` to `eventSongTimeMs` via `SmoothedSongClock::HostNsToSongTimeMs` (§19).
-3. Walk the lane's index slice starting from `LaneCursors[lane]`.
-4. Find the unjudged note with smallest `|inputSongTimeMs - targetTimeMs|` within `goodWindowMs`.
-5. Emit a `JudgmentCommand` (no mutation here) and stop.
+2. Use the event's `event_song_time_ms` (already reverse-mapped from `event_host_ns` in the main loop via `SmoothedSongClock::HostNsToSongTimeMs`, §19; falls back to the current frame song time if unset).
+3. `JudgementSystem::JudgeTaps` scans notes forward from the monotonic `next_idx`, skipping resolved notes and notes in other lanes.
+4. It keeps the unresolved note with the smallest `|input_song_time_ms - (time_ms + song_offset_ms)|` within the Good window, breaking early once future notes are out of range.
+5. It returns a `TapCommandBuffer` by value (no mutation); the caller applies it.
 
-The algorithm is O(k) per event where k is the number of unjudged notes inside the largest window for that lane (typically <= 2).
+The scan is bounded: it stops as soon as the next candidate is beyond the Good window in the future. A per-lane index slice (`LaneCursors[lane]`) that removes the lane filter entirely is **[v2]** (see §17.5).
 
 ### 6.7 Miss handling
 
-A note is missed when:
+A note is missed when: **[Shipped]**
 
 ```text
-chartClock.NowMs() > targetTimeMs + missWindowMs   AND   runtime.state == Pending|Active
+songTimeMs - (timeMs + songOffsetMs) > goodWindowMs   AND   note still unresolved
 ```
 
-The `MissDetector` runs in the same Decide phase as judgment, emits `MissCommand` records, and the Commit phase resets combo and increments miss count.
+`JudgementSystem::DetectMisses` walks forward from `next_idx`, emits an `AutoMiss` `JudgeCommand` for each unresolved note past the boundary, and advances `next_idx`. It runs in `GameplayScreen::Update`; applying the commands resets combo and increments the miss count. Extracting this into a standalone `MissDetector` that runs in a single explicit Decide phase alongside taps is **[Planned]** (§24); the pure-decision shape (it returns a buffer and mutates nothing) is already **[Shipped]**.
 
 ### 6.8 Scoring
 
@@ -273,36 +304,37 @@ multiplier_q16 = 65536 + min(combo, 100) * 328     // ~0.005 per combo, capped a
 finalAdd       = (baseScore * multiplier_q16) >> 16
 ```
 
-Q16 fixed-point keeps scoring deterministic across platforms. Floating-point is forbidden in the score path.
+Q16 fixed-point keeps scoring deterministic across platforms. Floating-point is forbidden in the score path. **[Shipped]** - implemented in `Scoring::EarnScore` (`game/GameRules.h`): base scores 1000/700/300, `multiplier_q16 = 65536 + min(combo, 100) * 328`, returned as `(int64_t(base) * multiplier_q16) >> 16`. The `int64_t` widening avoids overflow; there is no `float` anywhere on the score path.
 
 ### 6.9 Accuracy
 
+Actual implementation (`Grading::Accuracy`, `game/GameRules.h`) expresses the same idea as an integer-weighted ratio: **[Shipped]**
+
 ```text
-weight(Perfect) = 1.0
-weight(Great)   = 0.7
-weight(Good)    = 0.3
-weight(Miss)    = 0.0
-accuracy01      = sum(weight) / max(1, totalJudgedAndMissed)
+accuracy01 = (perfect*300 + great*200 + good*100) / (total * 300)
+           = weights 1.0 / 0.667 / 0.333 / 0.0 over Perfect/Great/Good/Miss
 ```
 
-Accuracy is computed lazily for `ResultsState` and the debug overlay; not in the hot path.
+Accuracy is `float` here on purpose: it is a display/grading figure for the result screen and debug overlay, computed lazily and **not on the score hot path**. The "no floating-point" rule applies to scoring, not to this presentation-layer ratio.
 
 ### 6.10 Feedback
 
-Minimum feedback set (all required for v1):
+Feedback set: **[Shipped]**
 
-- Inline judgment text fades over ~200 ms.
-- Note geometry retired with a single-frame flash.
-- Combo / score / accuracy in the HUD.
-- Average signed offset and last-delta in the debug overlay.
+- Inline judgment text fades over `GameConfig::kJudgeDisplayMs`.
+- Note hit effects on resolve.
+- Combo / score in the HUD; accuracy and grade on the result screen.
+- Calibration offset and last-judgment delta in the debug overlay (running p50/p99 timing stats are **[Planned]**, §27).
 
-Particles, screen shake, and bloom are out of v1 scope.
+Particles, screen shake, and bloom are **[v2]**.
 
 ## 7. Content design
 
-### 7.1 Chart scope
+### 7.1 Chart scope [Shipped]
 
-The v1 demo ships exactly one chart, `demo_fruit_loop_01`. Audio is a placeholder beat track or short royalty-free loop. The chart proves rhythm-system correctness, not musical depth.
+The build ships 41 charts indexed by `assets/charts/catalog.json`, each a `*.rfs.json` file, selectable through `ChartSelectScreen` with multiple difficulties. Charts are imported from osu!mania sources through an offline pipeline (see the repository README). The rhythm core's correctness does not depend on chart count; the catalog exists to make the demo pleasant to play and review.
+
+> Music and chart-source licensing: the runtime audio is not original work, so the public repository documents that audio and imported chart data are for demonstration only and are not redistributed as the project's own license. This boundary is stated in the README/LICENSE rather than here.
 
 ### 7.2 Chart length
 
@@ -317,28 +349,21 @@ Target: 45-75 seconds. Long enough for a full session arc (intro -> peak -> outr
 | Peak | 30-55s | Cross-lane density, shorter inter-note gaps. |
 | Outro | 55-70s | Spaced single notes; clean ending. |
 
-### 7.4 Example chart payload (`assets/charts/demo_fruit_loop_01.json`)
+### 7.4 Chart format
+
+Charts are `*.rfs.json` files indexed by `catalog.json`; `ChartLoader` reads a chart id + difficulty and produces a `FrozenChart` of notes `{ id, time_ms, lane, visual_id }` sorted by time. The illustrative shape below shows the fields the loader actually consumes; consult `assets/charts/catalog.json` and any `*.rfs.json` for the real schema.
 
 ```json
 {
-  "schemaVersion": 1,
-  "songId": "demo_fruit_loop_01",
-  "title": "Fruit Rush Demo",
-  "audio": "assets/audio/fruit_rush.ogg",
-  "bpm": 120,
-  "offsetMs": 0,
-  "approachTimeMs": 1600,
-  "lanes": 4,
+  "title": "Example",
   "notes": [
-    { "id": 1, "timeMs": 2000, "lane": 0, "type": "Tap", "visual": 0 },
-    { "id": 2, "timeMs": 2500, "lane": 1, "type": "Tap", "visual": 1 },
-    { "id": 3, "timeMs": 3000, "lane": 2, "type": "Tap", "visual": 2 },
-    { "id": 4, "timeMs": 3500, "lane": 3, "type": "Tap", "visual": 3 }
+    { "id": 1, "time_ms": 2000, "lane": 0, "visual_id": 0 },
+    { "id": 2, "time_ms": 2500, "lane": 1, "visual_id": 1 }
   ]
 }
 ```
 
-`schemaVersion` mismatch is a hard load-time rejection, not a fallback (§20.2).
+A formal `schemaVersion` field with hard load-time rejection on mismatch is **[Planned]** as part of `ChartValidator` (§20.2).
 
 ## 8. UX and screens
 
@@ -352,11 +377,11 @@ Chart title, note count, validation result, audio load result, smoothed-clock ar
 
 ### 8.3 Gameplay HUD
 
-Score, combo, accuracy, last-judgment label. Debug overlay toggleable via F1.
+Score, combo, and the fading last-judgment label. Debug overlay toggleable via F1. (Accuracy and grade are shown on the result screen, not the live HUD.)
 
-### 8.4 Results screen
+### 8.4 Result screen
 
-Final score, accuracy, max combo, judgment counts, mean signed offset, p99 update / render time, p99 input poll-to-judge latency. Restart prompt.
+**[Shipped]:** final score, accuracy, letter grade, max combo, and per-judgment counts; Enter returns to song select. **[Planned]:** mean signed offset, p99 update/render time, and p99 input-to-judge latency, added once the metrics layer lands (§27).
 
 ## 9. Visual direction
 
@@ -364,38 +389,40 @@ Geometric placeholders are acceptable and shipped. Lanes are flat panels; notes 
 
 ## 10. Audio direction
 
-One looped beat track at `assets/audio/fruit_rush.ogg`. Optional hit/miss SFX. The audio backend MUST expose the sample-position-based clock contract (§18); art-grade music mixing is out of scope.
+Per-chart audio tracks loaded by `catalog.json` (imported tracks, demonstration-only). The miniaudio backend exposes the sample-position clock contract (§18) via `ma_sound_get_cursor_in_pcm_frames`. Dedicated hit/miss SFX are **[v2]**; art-grade mixing is out of scope.
 
 ## 11. Difficulty and tuning
 
-Initial tuning constants:
+Actual tuning constants: **[Shipped]**
 
-| Parameter | Value |
-|---|---:|
-| `approachTimeMs` | 1600 |
-| `perfectWindowMs` | 35 |
-| `greatWindowMs` | 70 |
-| `goodWindowMs` | 110 |
-| `missWindowMs` | 130 |
-| `audioOffsetMs` (calibration) | 0 |
-| `inputOffsetMs` (calibration) | 0 |
+| Parameter | Value | Where |
+|---|---:|---|
+| Perfect window | 50 ms | `JudgementConfig::perfect_window_ms` |
+| Great window | 100 ms | `JudgementConfig::great_window_ms` |
+| Good window (also miss boundary) | 150 ms | `JudgementConfig::good_window_ms` |
+| Approach time | from `GameConfig::kSpeedLevels` | scroll-speed table |
+| Calibration offset | 0 (default) | `PlaySessionConfig::song_offset_ms` |
 
-All values live in `JudgmentConfig`/`RhythmConfig`; none MAY be hard-coded inside an algorithm.
+Windows live in `JudgementConfig` (constructor-injected into `JudgementSystem`, §22.2), never hard-coded inside the algorithm. v1 carries a single calibration offset (§18.7), not separate audio/input offsets.
 
 ## 12. Demo acceptance criteria
 
-The v1 build is application-ready when **every** clause holds:
+**Met today [Shipped]:**
 
-1. CMake configure + build succeeds from a clean checkout on Windows MSVC and on Linux GCC.
-2. The executable starts without manual asset path fix-ups.
-3. The demo chart loads, validates, and arms the smoothed clock without errors.
+1. CMake configure + build succeeds from a clean checkout on Windows MSVC; the dependency guard passes.
+2. The executable starts and selects/loads charts without manual asset-path fix-ups.
+3. A selected chart loads, validates, and arms the smoothed clock without errors.
 4. Four-lane falling notes render with positions that are pure functions of song time.
-5. Lane inputs produce the documented Perfect/Great/Good/Miss distribution against simulated perfect inputs (within tolerance).
-6. Score, combo, accuracy, and miss-reset semantics match §6.8.
-7. The debug overlay reports FPS, song time, active notes, update p50/p99 ms, render p50/p99 ms, input poll-to-judge latency, frame-arena high water mark.
-8. `RFS_HOTPATH_BEGIN` blocks observe **zero** global heap allocations during steady play (verified by debug build).
-9. README documents the architecture diagram, the clock pipeline, and the memory contract table.
-10. A 30-60 second demo recording (mp4 or gif) is checked into `docs/`.
+5. Lane inputs produce Perfect/Great/Good/Miss per the 50/100/150 windows.
+6. Score, combo, and miss-reset semantics match §6.8 (Q16).
+7. The debug overlay reports song time, calibration offset, last-judgment delta, note index, and frame time.
+
+**Target [Planned] (acceptance signals for §30):**
+
+8. Linux GCC build green (the code is std-only in `rfs_core`; not yet CI-verified on Linux).
+9. The overlay reports update p50/p99, input-to-judge latency, and frame-arena high-water mark.
+10. `RFS_HOTPATH` blocks observe zero global heap allocations during steady play (debug build).
+11. CI runs `rfs_tests` on every push; README + LICENSE + a 30-60 s demo recording are committed.
 
 # Part II - Technical Design Document (TDD)
 
@@ -403,7 +430,7 @@ The v1 build is application-ready when **every** clause holds:
 
 ### 13.1 Technical thesis
 
-The project demonstrates a **layered timing pipeline**, an **inverted platform boundary**, a **command-driven judgment flow**, and a **contractually-enforced hot-path memory budget**. These four axes are the entire technical story; everything else (renderer, HUD, results screen) is plumbing.
+The project demonstrates a **layered timing pipeline** (shipped), an **inverted platform boundary** enforced at build time (shipped), a **command-driven judgment flow** (shipped), and a **contractually-enforced hot-path memory budget** (planned, §26). The first three are the technical story today; the fourth is the committed next step and the clearest bridge toward the systems/high-performance work I am building toward. Everything else (renderer, HUD, result screen) is plumbing.
 
 ### 13.2 Stack
 
@@ -418,12 +445,12 @@ The project demonstrates a **layered timing pipeline**, an **inverted platform b
 
 ### 13.3 Backend selection rationale (recorded for the interview answer)
 
-SFML for window/input/render minimises non-architecture risk in the 48-hour window. miniaudio for audio is selected over `sf::Music` because:
+SFML for window/input/render minimises non-architecture risk. miniaudio for audio is selected over `sf::Music` because:
 
 - `sf::Music::getPlayingOffset()` is ~10-20 ms quantised on common Windows configurations and contains pause/resume jumps that the smoothed clock cannot fully hide.
 - `ma_sound_get_cursor_in_pcm_frames` exposes a sample-index integer that reads atomically from the main thread without entering audio callback code, which keeps v1 free of lock-free SPSC plumbing while still providing sample-accurate anchors (see §18 and §37).
 
-If miniaudio integration breaches its 2-hour cap (see §30 guardrails), the platform layer falls back to SFML audio with a documented `audio backend degraded` note in the README; the rest of the architecture is unaffected because the clock contract is interface-driven.
+Because the clock contract is interface-driven (`IAudioBackendClock`), the audio backend can be swapped for SFML audio without touching gameplay code if miniaudio ever needs to be dropped; that swap is recorded as a fallback rather than a planned change.
 
 ## 14. System architecture
 
@@ -460,139 +487,89 @@ The forbidden column is enforced via CMake (§16.3).
 
 ### 14.3 Source-file ownership
 
-| Module | Files (representative) |
-|---|---|
-| `rfs_core` | `rhythm/*`, `util/*`, `diagnostics/Logger`, `diagnostics/ScopedTimer`, `diagnostics/AllocationGuard`, `memory/FramePmrArena` |
-| `rfs_platform_iface` | `platform/IAudioBackendClock.h`, `platform/IAudioPlayer.h`, `platform/IInputSource.h`, `platform/IRenderer.h`, `platform/IWindow.h`, `platform/InputEvent.h` |
-| `rfs_platform_sfml` | `platform/sfml/SfmlWindow`, `platform/sfml/SfmlInputSource`, `platform/sfml/SfmlRenderer` |
-| `rfs_platform_miniaudio` | `platform/miniaudio/MiniaudioAudioPlayer`, `platform/miniaudio/MiniaudioBackendClock` |
-| `rfs_app` | `app/*`, `game/*`, `render/*`, `diagnostics/FrameMetrics` |
-
-`diagnostics::FrameMetrics` lives in `rfs_app`, not `rfs_core`, because it aggregates application-level concerns (FPS, render timings).
+| Module | Files (actual) | Notes |
+|---|---|---|
+| `rfs_core` | `rhythm/*` (chart, clock, judgement, catalog), `game/GameRules.h`, `game/GameConfig.h` | No OS/SFML/miniaudio. `diagnostics/ScopedTimer`, `memory/FramePmrArena`, `AllocationGuard` are **[Planned]** additions here. |
+| `rfs_platform_iface` | `platform/I*.h`, `platform/InputEvent.h`, `platform/SampleAnchor.h` | Interfaces only. |
+| `rfs_platform_sfml` | `platform/sfml/SfmlWindow`, `SfmlInputSource`, `SfmlRenderer` | |
+| `rfs_platform_miniaudio` | `platform/miniaudio/MiniaudioAudioPlayer`, `MiniaudioAudioBackendClock` | |
+| `rfs_app` | `app/*` (`Application`, `UIManager`, `FrameContext`), `game/*Screen`, `game/UiDraw`, `game/DebugOverlay` | `diagnostics/FrameMetrics` is **[Planned]** here. |
 
 ### 14.4 Backend swap test (a runtime contract)
 
-A reviewer should be able to:
+- **[Shipped]:** `rfs_tests` builds and runs with no audio device and no display server; it links only `rfs_core` + `rfs_platform_iface` (+ doctest). This is the litmus test for the inverted dependency direction, and it passes today (tests feed `SampleAnchor` values directly to the clock).
+- **[Planned]:** a named `MockAudioBackendClock` implementing `IAudioBackendClock`, and a headless `GameplaySession` driven by synthetic input for a bit-for-bit deterministic perfect-run score (§29). A `--headless --simulate-perfect-run` demo entry point is part of the same work.
 
-- Build `rfs_tests` on a CI runner with no audio device and no display server. The binary links only `rfs_core` + `rfs_platform_iface`, and uses a `MockAudioBackendClock` and `MockInputSource` injected via constructor. This is the litmus test for the inverted dependency direction.
-- Run `rfs_demo --headless --simulate-perfect-run` (planned for Day 3). The demo links the full backend stack but skips window creation; the simulated input stream produces a bit-for-bit deterministic score.
+If building `rfs_tests` ever required a window or audio device, the platform inversion would be violated; that is treated as a P0 bug.
 
-If either workflow requires a window or audio device to compile, the platform inversion has been violated and is treated as a P0 bug.
-
-### 14.5 Runtime flow
+### 14.5 Runtime flow [Shipped]
 
 ```text
 main()
-  -> AppConfig::FromArgs(argv)
-  -> Logger::Init(level)
-  -> Platform: SfmlWindow + SfmlInputSource + SfmlRenderer + MiniaudioAudioPlayer + MiniaudioBackendClock
+  -> construct SfmlWindow + SfmlInputSource + SfmlRenderer
+                + MiniaudioAudioPlayer + MiniaudioAudioBackendClock
   -> Application::Run()
-       -> StateStack push(MainMenuState)
+       -> UIManager::NavigateTo(MainMenuScreen)
        -> for each frame:
-            FramePmrArena::Reset()
-            input_events = SfmlInputSource::Poll()         // span, see §19
-            for each event: event.songTimeMs = clock.HostNsToSongTimeMs(event.hostNs)
-            stateStack.top().Update({arena, clock, events, frameMetrics})
-            stateStack.top().Render(renderer)
-            FrameMetrics::Commit()
-       -> Application::Shutdown()
+            events = SfmlInputSource::Poll()                 // span, see §19
+            for each event: event.event_song_time_ms = song_clock.HostNsToSongTimeMs(event.event_host_ns)
+            song_clock.Tick(audioClock.Current(), now)       // advance smoothed clock from audio cursor
+            activeScreen.HandleInput(events)
+            activeScreen.Update(dt)                           // dt used only for UI/lead-in, never for judgment
+            activeScreen.Render(renderer)
+            uiManager.FlushPending()                          // apply nav changes once per frame
+       -> shutdown
 ```
+
+`FramePmrArena::Reset()` and `FrameMetrics::Commit()` are **[Planned]** insertions into this loop (§26-27); they are not present today.
 
 ## 15. Project structure
 
+Actual structure (**[Shipped]**); `[Planned]` markers show where the §24/§26/§27 work lands.
+
 ```text
-rhythm-fruit-shop-cpp-core/
+rhythm-fruit-shop-cpp-core/cpp_core/
   CMakeLists.txt
-  README.md
-  cmake/
-    DependencyGuards.cmake          # forbidden-link enforcement
-    Warnings.cmake
-  external/
-    miniaudio/miniaudio.h
   assets/
-    audio/fruit_rush.ogg
-    charts/demo_fruit_loop_01.json
-    fonts/Inter-Regular.ttf
-  docs/
-    GDD_TDD.md                      # this document
-    architecture.md                 # one-page summary + mermaid copy
-    performance_notes.md            # budget table + measurement methodology
-    demo.gif
+    audio/                          # per-chart imported tracks (demo-only)
+    charts/  catalog.json + *.rfs.json   # 41 charts
+    fonts/   Inter-Regular.ttf
   src/
     main.cpp
+    rfs_app.cpp
     app/
       Application.{h,cpp}
-      AppConfig.h
-      GameLoop.{h,cpp}
-      StateStack.{h,cpp}
-      IGameState.h
+      UIManager.{h,cpp}             # screen stack (NavigateTo / GoBack / ReplaceTop)
+      IScreen.h
       FrameContext.h
-    platform/                       # interfaces only (rfs_platform_iface)
-      IAudioBackendClock.h
-      IAudioPlayer.h
-      IInputSource.h
-      IRenderer.h
-      IWindow.h
-      InputEvent.h
-      SampleAnchor.h
-      sfml/
-        SfmlWindow.{h,cpp}
-        SfmlInputSource.{h,cpp}
-        SfmlRenderer.{h,cpp}
-      miniaudio/
-        MiniaudioAudioPlayer.{h,cpp}
-        MiniaudioBackendClock.{h,cpp}
+    platform/                       # rfs_platform_iface (interfaces only)
+      IAudioBackendClock.h  IAudioPlayer.h  IInputSource.h
+      IRenderer.h  IWindow.h  InputEvent.h  SampleAnchor.h  UiFontConfig.h
+      sfml/      SfmlWindow / SfmlInputSource / SfmlRenderer
+      miniaudio/ MiniaudioAudioPlayer / MiniaudioAudioBackendClock
     rhythm/                         # rfs_core
-      Chart.h
-      FrozenChart.{h,cpp}
-      ChartLoader.{h,cpp}
-      ChartValidator.{h,cpp}
+      FrozenChart.h  ChartLoader.{h,cpp}
+      ChartCatalog.{h,cpp}  SongDisplay.{h,cpp}  AudioPathResolver.{h,cpp}
       SmoothedSongClock.{h,cpp}
-      ChartClock.{h,cpp}
-      NoteTimeline.{h,cpp}
-      SpawnScheduler.{h,cpp}
-      JudgmentSystem.{h,cpp}
-      JudgmentCommand.h
-      MissDetector.{h,cpp}
-      RuntimeStore.{h,cpp}
-      ScoreSystem.{h,cpp}
-      RhythmConfig.h
-    game/
-      MainMenuState.{h,cpp}
-      LoadingState.{h,cpp}
-      GameplayState.{h,cpp}
-      PauseState.{h,cpp}
-      ResultsState.{h,cpp}
-      ErrorState.{h,cpp}
-      GameplaySession.{h,cpp}
-      GameplayViewModel.h
-    render/
-      GameplayRenderer.{h,cpp}
-      HudRenderer.{h,cpp}
-      DebugOverlay.{h,cpp}
-    memory/
-      FramePmrArena.{h,cpp}
-      AllocationGuard.{h,cpp}
-      Hotpath.h                     # RFS_HOTPATH_BEGIN/END macros
-    diagnostics/
-      Logger.{h,cpp}
-      ScopedTimer.h
-      FrameMetrics.{h,cpp}
-      LatencyHistogram.{h,cpp}
-    util/
-      Result.h
-      NonCopyable.h
-      Math.h
-      StrongTypes.h
-  tests/
-    TestJudgmentSystem.cpp
-    TestScoreSystem.cpp
-    TestChartValidator.cpp
-    TestNoteTimeline.cpp
-    TestSmoothedSongClock.cpp       # uses MockAudioBackendClock
-    TestPauseInvariant.cpp
-    TestPerfectRunInvariant.cpp     # macro invariant test (see §29)
+      JudgementSystem.{h,cpp}  JudgeCommand.h  JudgeCommandBuffer.h
+    game/                           # rfs_app
+      MainMenuScreen / ChartSelectScreen / LoadingScreen
+      GameplayScreen / PauseScreen / ResultScreen
+      GameRules.h  GameConfig.h  GameColors.h  GameLayout.h
+      GameContext.h  GameResult.h  PlaySessionConfig.h
+      UiDraw.{h,cpp}  DebugOverlay.{h,cpp}
+
+  # [Planned] additions (see §24, §26, §27):
+  #   rhythm/ChartValidator, NoteTimeline, MissDetector, RuntimeStore, ScoreSystem
+  #   game/GameplaySession, GameplayViewModel
+  #   memory/FramePmrArena, AllocationGuard, Hotpath.h
+  #   diagnostics/ScopedTimer, FrameMetrics, LatencyHistogram
+  #   util/StrongTypes.h
+  #   tests/TestScoreSystem, TestChartValidator, TestNoteTimeline,
+  #         TestPauseInvariant, TestPerfectRunInvariant (+ MockAudioBackendClock)
 ```
+
+(See the README for the offline chart-import tooling that populates `assets/charts/`.)
 
 ## 16. Build design
 
@@ -608,11 +585,11 @@ rhythm-fruit-shop-cpp-core/
 | `rfs_demo` | EXECUTABLE | (none) | `rfs_app`, `rfs_platform_sfml`, `rfs_platform_miniaudio` |
 | `rfs_tests` | EXECUTABLE | (none) | `rfs_core`, `rfs_platform_iface`, `doctest` |
 
-### 16.2 Build principle (the actual technical claim)
+### 16.2 Build principle (the actual technical claim) [Shipped]
 
 > The rhythm core compiles, links, and tests without a window, an audio device, SFML, or miniaudio.
 
-This is not aspirational; it is enforced by the CMake target table above and audited by the dependency guard (§16.3). It is the single most important architectural signal in the repository.
+This is not aspirational - the target table above matches `CMakeLists.txt` exactly, and the dependency guard (§16.3) audits it at configure time. It is the single most important architectural signal in the repository, and it is real today.
 
 ### 16.3 Dependency guard (cmake/DependencyGuards.cmake)
 
@@ -659,120 +636,80 @@ target_compile_options(rfs_warnings INTERFACE
 
 ## 17. Core data model
 
-### 17.1 Strong types
+### 17.1 Type aliases
 
-Time and identifier types are explicit. `float time` is forbidden in `rfs_core`.
+The shipped code uses a small set of aliases defined where they are used (`platform/InputEvent.h`, `platform/SampleAnchor.h`): **[Shipped]**
 
 ```cpp
-// util/StrongTypes.h
-namespace rfs {
-
+using HostNanos    = std::int64_t;   // steady_clock tick count
 using Milliseconds = std::int32_t;
-using Microseconds = std::int64_t;
-using HostNanos    = std::int64_t;     // steady_clock::now().time_since_epoch().count()
-using SampleIndex  = std::int64_t;
-using NoteId       = std::uint32_t;
-using NoteIndex    = std::uint32_t;    // index into FrozenChart::notes
-using LaneIndex    = std::uint8_t;
-
-inline constexpr LaneIndex kMaxLanes = 8;
-inline constexpr std::size_t kMaxEventsPerFrame = 64;
-
-struct SongTime { Milliseconds value = 0; };
-
-} // namespace rfs
+using SampleIndex  = std::uint64_t;
 ```
 
-### 17.2 Note definition (immutable)
+Lane count is `GameConfig::kLaneCount = 4`; max events per frame is `kMaxEventsPerFrame = 64` (in `SfmlInputSource`). A consolidated `util/StrongTypes.h` with wrapper structs (`SongTime`, `NoteId`, `NoteIndex`, `LaneIndex`) for stronger compile-time separation is **[v2]** polish - the current aliases are plain typedefs, which is enough at this scope.
+
+### 17.2 Note definition (immutable) [Shipped]
+
+Actual `NoteDef` (`rhythm/FrozenChart.h`):
 
 ```cpp
-enum class NoteType : std::uint8_t { Tap /*, Hold, Slide, Flick (reserved) */ };
-
 struct NoteDef final {
-    NoteId        id           = 0;
-    LaneIndex     lane         = 0;
-    NoteType      type         = NoteType::Tap;
-    std::uint8_t  _pad0        = 0;
-    std::uint16_t visualId     = 0;
-    Milliseconds  targetTimeMs = 0;
+    std::uint32_t id        = 0;
+    std::int32_t  time_ms   = 0;
+    std::uint8_t  lane      = 0;
+    std::uint16_t visual_id = 0;
 };
-static_assert(sizeof(NoteDef) == 12, "NoteDef layout drift; see §17.4 cache plan.");
 ```
 
-### 17.3 FrozenChart (immutable post-load)
+There is no `NoteType` field yet (Tap-only) and no `static_assert` on layout. Adding both is **[Planned]** polish; Hold/Slide/Flick are **[v2]**.
+
+### 17.3 FrozenChart (immutable post-load) [Shipped]
+
+Actual shape - the chart header is flattened into the class rather than a separate `ChartHeader`, and there is no per-lane index array:
 
 ```cpp
-struct ChartHeader final {
-    std::string  songId;
-    std::string  audioPath;
-    std::int32_t bpm           = 120;
-    Milliseconds offsetMs      = 0;
-    Milliseconds approachTimeMs = 1600;
-    LaneIndex    laneCount     = 4;
-};
-
 class FrozenChart final {
 public:
-    // Constructed only by ChartLoader. Read-only thereafter.
-    std::span<const NoteDef>     Notes()                     const noexcept { return notes_; }
-    std::span<const NoteIndex>   LaneSlice(LaneIndex lane)   const noexcept;
-    const ChartHeader&           Header()                    const noexcept { return header_; }
-
+    const std::string&       Title()          const noexcept;
+    std::span<const NoteDef> Notes()          const noexcept;   // sorted by time_ms
+    std::int32_t             ApproachTimeMs() const noexcept;
+    std::uint8_t             LaneCount()      const noexcept;
 private:
-    friend class ChartLoader;
-    FrozenChart() = default;
-
-    ChartHeader                                                header_;
-    std::vector<NoteDef>                                       notes_;          // sorted by targetTimeMs
-    std::array<std::vector<NoteIndex>, kMaxLanes>              laneIndex_;      // sorted by targetTimeMs within lane
+    friend class ChartLoader;     // only the loader may populate it
+    std::string          title_;
+    std::int32_t         approach_time_ms_ = 1600;
+    std::uint8_t         lane_count_       = 4;
+    std::vector<NoteDef> notes_;
 };
 ```
 
-`FrozenChart` exposes only `std::span<const ...>`. There is no mutating accessor; this satisfies invariant I-07 by construction.
+`FrozenChart` exposes only `std::span<const ...>` and a private, friend-only constructor path; there is no mutating accessor. This satisfies invariant I-07 by construction. A per-lane `LaneSlice` index is **[v2]** (§21.2).
 
 ### 17.4 Runtime state (mutable, per-session)
 
+The shipped runtime state is deliberately minimal - a `GameplaySnapshot` carried by `JudgementSystem`: **[Shipped]**
+
 ```cpp
-enum class NoteRuntimeState : std::uint8_t {
-    Pending,    // before approach window
-    Active,     // approach window entered, not yet judged
-    Judged,
-    Missed
-};
-
-struct NoteRuntime final {
-    NoteRuntimeState state        = NoteRuntimeState::Pending;
-    std::uint8_t     _pad0        = 0;
-    std::int16_t     lastDeltaMs  = 0;
-};
-static_assert(sizeof(NoteRuntime) == 4, "NoteRuntime layout drift.");
-
-class RuntimeStore final {
-public:
-    explicit RuntimeStore(const FrozenChart& chart);
-    void Reset();
-    void Apply(std::span<const class JudgmentCommand> commands);
-    void Apply(std::span<const class MissCommand>     commands);
-
-    std::span<const NoteRuntime>             States()    const noexcept { return states_; }
-    std::span<const NoteIndex>               LaneCursor(LaneIndex lane) const noexcept;
-
-private:
-    const FrozenChart&                                     chart_;
-    std::vector<NoteRuntime>                               states_;     // 1:1 with chart.Notes()
-    std::array<std::uint32_t, kMaxLanes>                   laneCursor_{}; // first not-yet-finalised index per lane
+struct GameplaySnapshot {
+    int next_idx = 0;                          // monotonic cursor into the time-sorted notes
+    std::vector<std::uint8_t> note_resolved;   // 0 = unresolved, 1 = resolved (1:1 with notes)
 };
 ```
 
-### 17.5 Layout rationale
+The richer model below - an explicit `NoteRuntimeState` enum, a packed `NoteRuntime`, and a `RuntimeStore` as the single mutation point with per-lane cursors - is **[Planned]** and arrives with the headless session (§24):
 
-The decision was AoS over explicit SoA after evaluating cache footprint at v1 scope:
+```cpp
+// [Planned]
+enum class NoteRuntimeState : std::uint8_t { Pending, Active, Judged, Missed };
+struct NoteRuntime final { NoteRuntimeState state; std::uint8_t _pad0; std::int16_t last_delta_ms; };
+class RuntimeStore final {  // owns states_; Apply(commands) is the only mutation point
+    /* ... */
+};
+```
 
-- `sizeof(NoteDef) = 12` and `sizeof(NoteRuntime) = 4`. A 200-note chart consumes 2.4 KB of `NoteDef` and 0.8 KB of `NoteRuntime` - both well inside L1.
-- Lane-local index slices (one `std::vector<NoteIndex>` per lane) keep judgment loops on contiguous index runs. The judgment hot path touches one `NoteIndex` and one `NoteRuntime` per candidate, never crosses lanes.
-- Explicit SoA (separate arrays for `targetTimeMs[]`, `lane[]`, `visualId[]`) is recorded as a v2 evolution at stress-chart scale (>= 10k notes per lane), not v1.
+### 17.5 Layout rationale (AoS vs SoA)
 
-This is the answer when an interviewer asks "why didn't you go full SoA". The answer is "I measured the v1 footprint, it fits in L1, the judgment path is already lane-local; SoA gains are negligible at this scale and I'd rather not pay the readability tax".
+The shipped data is a single time-sorted `std::vector<NoteDef>` (AoS) plus a parallel resolved-flag byte array. The reasoning - and the interview answer to "why not full SoA?" - holds: `sizeof(NoteDef)` is ~11-12 bytes, so a few-hundred-note chart fits comfortably in L1; traversal is a forward scan over contiguous memory from a monotonic cursor. Explicit SoA (separate `time_ms[]`, `lane[]`, `visual_id[]` arrays) only pays off at stress-chart scale (>= 10k notes), and is recorded as **[v2]**. The honest version of the answer: *I kept AoS because at this scale it fits in cache and reads cleanly; I documented the SoA trigger rather than pre-optimizing.*
 
 ## 18. Timing architecture
 
@@ -780,57 +717,58 @@ This is the answer when an interviewer asks "why didn't you go full SoA". The an
 
 ```mermaid
 graph LR
-    miniaudio["miniaudio (audio thread, opaque)"] --> backend["IAudioBackendClock::SampleAnchor() main-thread polled"]
-    backend --> L1["L1: SmoothedSongClock EMA + reanchor + interpolation"]
-    L1 --> L2["L2: ChartClock offset + pause + calibration"]
-    L2 --> gameplay["Gameplay systems"]
+    miniaudio["miniaudio (audio thread, opaque)"] --> backend["L0: IAudioBackendClock::Current() main-thread polled"]
+    backend --> L1["L1: SmoothedSongClock interpolation + reanchor + freeze"]
+    L1 --> gameplay["Gameplay + JudgementSystem (offset applied here)"]
 ```
 
-Layer responsibilities:
+Layer responsibilities (two layers shipped):
 
-- **L0 - `IAudioBackendClock`** (interface). Returns `SampleAnchor`, an atomic snapshot pair of `(SampleIndex sampleCursor, HostNanos hostNs, int sampleRate)`. The miniaudio implementation reads `ma_sound_get_cursor_in_pcm_frames` synchronously from the main thread paired with `steady_clock::now()`; it does **not** enter the audio callback. The mock implementation drives a deterministic sample cursor from a virtual host clock for tests.
-- **L1 - `SmoothedSongClock`**. Stores the most recent anchor; on `Now()` returns `anchor.songMs + (steady_clock::now() - anchor.hostNs).count() / 1'000'000`. Applies EMA smoothing and a reanchor policy (§18.5). Lock-free because it lives entirely on the main thread.
-- **L2 - `ChartClock`**. Adds `chartOffsetMs`, pause/resume bookkeeping, and `audioOffsetMs` / `inputOffsetMs` calibration (§18.7). This is the clock that gameplay systems read.
+- **L0 - `IAudioBackendClock`** (interface, **[Shipped]**). `SampleAnchor Current()` returns a snapshot `(SampleIndex sample_cursor, HostNanos host_ns, int32_t sample_rate)`. `MiniaudioAudioBackendClock` reads `ma_sound_get_cursor_in_pcm_frames` synchronously from the main thread paired with `steady_clock::now()`; it does **not** enter the audio callback. Tests feed `SampleAnchor` values directly to L1; a named `MockAudioBackendClock` that implements this interface is **[Planned]** (§29).
+- **L1 - `SmoothedSongClock`** (**[Shipped]**). Holds the latest anchor; `NowMs(host_now_ns)` interpolates `anchor_song_ms + (host_now_ns - anchor_host_ns)`. `Tick` applies the reanchor policy (§18.5); `SetFrozen`/`ClearFrozen` implement pause (§18.6); `HostNsToSongTimeMs` is the reverse map used for input (§19). Lock-free because it lives entirely on the main thread.
+- **L2 - dedicated `ChartClock`** (**[v2]**). The original design routed chart offset, pause bookkeeping, and calibration through a third clock object. In the shipped code these live elsewhere: the calibration offset is applied inside `JudgementSystem` against note times, and pause/freeze lives in `SmoothedSongClock` + `PauseScreen`. A separate `ChartClock` is only worth extracting if offset/pause logic grows; recorded as a deferred refactor, not a missing feature.
 
 ### 18.2 Interface signatures
 
+Actual signatures (**[Shipped]**), with diagnostics counters marked **[Planned]**:
+
 ```cpp
 // platform/SampleAnchor.h
+using SampleIndex = std::uint64_t;
 struct SampleAnchor final {
-    SampleIndex sampleCursor = 0;
-    HostNanos   hostNs       = 0;
-    std::int32_t sampleRate  = 48000;
+    SampleIndex  sample_cursor = 0;
+    HostNanos    host_ns       = 0;
+    std::int32_t sample_rate   = 48000;
 };
 
 // platform/IAudioBackendClock.h
 class IAudioBackendClock {
 public:
     virtual ~IAudioBackendClock() = default;
-    // Snapshot pair from the main thread; cheap; called once per frame.
-    virtual SampleAnchor SampleNow() noexcept = 0;
-    virtual bool         IsArmed()  const noexcept = 0;
+    virtual SampleAnchor Current() noexcept = 0;   // polled once per frame
+    virtual bool         IsArmed() const noexcept = 0;
 };
 
 // rhythm/SmoothedSongClock.h
-class SmoothedSongClock final {
+class SmoothedSongClock {
 public:
     void  Reset();
-    void  Tick(SampleAnchor anchor, HostNanos hostNow) noexcept;
-    SongTime    Now(HostNanos hostNow) const noexcept;
-    Milliseconds HostNsToSongTimeMs(HostNanos eventHostNs) const noexcept;
+    void  Tick(SampleAnchor anchor, HostNanos host_now_ns);
+    float NowMs(HostNanos host_now_ns) const noexcept;
+    std::int32_t HostNsToSongTimeMs(HostNanos event_host_ns) const noexcept;
+    bool  IsArmed() const noexcept;
 
-    // Diagnostics
-    Milliseconds LastReanchorDeltaMs()  const noexcept { return lastReanchorDeltaMs_; }
-    std::uint32_t HardReanchorCount()   const noexcept { return hardReanchorCount_; }
+    void  SetFrozen(float song_time_ms, HostNanos host_ns_now) noexcept;  // pause
+    void  ClearFrozen(HostNanos host_ns_after_pause) noexcept;            // resume
+    bool  IsFrozen() const noexcept;
 
-private:
-    SampleAnchor   currentAnchor_{};
-    Milliseconds   smoothedDriftMs_     = 0;
-    Milliseconds   lastReanchorDeltaMs_ = 0;
-    std::uint32_t  hardReanchorCount_   = 0;
-    bool           armed_               = false;
+    // [Planned] diagnostics surfaced to the overlay (§27):
+    //   float        LastReanchorDeltaMs() const noexcept;
+    //   std::uint32_t HardReanchorCount()  const noexcept;
 };
 ```
+
+Note the time type is `float` milliseconds, not a `SongTime` strong type; the strong-type wrapper is **[v2]** polish (§17.1).
 
 ### 18.3 Why `dt` integration is forbidden
 
@@ -856,34 +794,36 @@ else                                                 : hard reanchor (replace cu
                                                        Logger::Warn("SmoothedSongClock hard reanchor: {} ms", deltaMs)
 ```
 
-The dead band prevents jitter-driven micro-adjustments; the soft band absorbs typical OS scheduling noise; the hard band catches device switches, pause/resume artefacts, and audio-buffer underruns. `lastReanchorDeltaMs` and `hardReanchorCount` are surfaced in the debug overlay.
+The dead band prevents jitter-driven micro-adjustments; the soft band absorbs typical OS scheduling noise; the hard band catches device switches, pause/resume artefacts, and audio-buffer underruns. The interpolation + reanchor behavior is **[Shipped]** in `SmoothedSongClock::Tick`; exposing `LastReanchorDeltaMs` / `HardReanchorCount` counters to the overlay is **[Planned]** (§27).
 
 ### 18.6 Pause/resume invariants
 
-```text
-On Pause:
-    chartClock.Freeze()                 // L2 stops returning increasing time
-    smoothedSongClock.Reset() = NO      // L1 keeps state but stops accepting new anchors
-    audioPlayer.Pause()
+Actual flow (**[Shipped]**), built on `SmoothedSongClock` freeze rather than a separate clock:
 
-On Resume:
-    audioPlayer.Resume()
-    smoothedSongClock.Reset()           // hard reanchor on next Tick
-    chartClock.Unfreeze()
+```text
+On Pause (PauseScreen::OnEnter):
+    songClock.SetFrozen(currentSongMs, hostNow)   // NowMs() pins to currentSongMs
+    if (audio.IsPlaying()) audio.Pause()          // guarded so lead-in pause doesn't mis-resume
+
+On Resume (PauseScreen::OnExit):
+    if (was_playing_) audio.Resume()
+    songClock.ClearFrozen(hostNowAfterPause)      // re-bases the anchor so time continues from T
 ```
 
-Test `TestPauseInvariant.cpp` covers: pause at `t = T`, sleep for arbitrary `S`, resume, observe that `chartClock.NowMs()` continues from `T` (not `T + S`) and that the next anchor delta hits the hard-reanchor branch exactly once.
+Freezing pins `NowMs()` to the captured time so song time continues from `T`, not `T + S`. The `was_playing_` guard (added during pause-UX work) makes pausing safe during the lead-in. A headless `TestPauseInvariant` that asserts resume continues from `T` and that exactly one hard reanchor occurs is **[Planned]** (§29); it depends on the headless session extraction (§24).
 
 ### 18.7 Calibration model
 
-Two independent offsets, never combined into one scalar:
+v1 ships a **single** calibration offset (**[Shipped]**): `PlaySessionConfig::song_offset_ms`, adjustable in the pause overlay (Left/Right) and applied inside `JudgementSystem` against note times. A positive offset shifts effective note times later, compensating for combined audio-output + input latency.
 
-| Offset | Sign | Meaning | Source |
-|---|---|---|---|
-| `audioOffsetMs` | typically positive | Time between audio-API submission and physical speaker emission. | Per-machine config, default 0. |
-| `inputOffsetMs` | typically negative | Time between physical key strike and OS event delivery. | Per-machine config, default 0. |
+The two-offset model below is **[v2]**. Splitting one offset into an `audio_offset_ms` (output latency) and `input_offset_ms` (key-to-event latency) is correct in principle - they come from independent hardware paths - but a single scalar is sufficient and easier to calibrate at v1 scope:
 
-`ChartClock::NowForJudgmentMs() = L1.Now() - audioOffsetMs`. `inputOffsetMs` is added to `eventHostNs` before reverse mapping (§19). They are exposed separately because they are caused by independent hardware paths; folding them invites bugs that are impossible to diagnose later.
+| Offset | Sign | Meaning |
+|---|---|---|
+| `audio_offset_ms` | typically positive | Audio-API submission to physical speaker emission. |
+| `input_offset_ms` | typically negative | Physical key strike to OS event delivery. |
+
+The trigger for splitting is a calibration UI that measures the two paths independently (tap-to-beat vs. visual-flash sync).
 
 ### 18.8 Numerical justification (why main-thread polling is sufficient for v1)
 
@@ -899,351 +839,273 @@ Without smoothing, the absolute song-time error at any frame is bounded by `buff
 expected_error_ms ~= bufferPeriodMs * (1 - alpha) / (2 - alpha) ~= 10 * 0.75 / 1.75 ~= 4.3 ms
 ```
 
-In practice, measurements on a Windows 11 dev box at 144 Hz with WASAPI shared mode show p99 song-time error <= 1.2 ms after warm-up.
+This expected bound (~4.3 ms, with the steady-state error well under one buffer period) is the design figure. Empirically confirming it with an instrumented p50/p99 song-time-error readout is **[Planned]** and depends on the metrics layer (§27); v3.0 does not claim a measured number it has not yet captured.
 
-**Why this is acceptable**. The Perfect window is 35 ms. The Good window is 110 ms. A smoothed-clock error of <= 1.2 ms (p99) is `< 4%` of the Perfect window and `< 1.1%` of the Good window. This is **below the perceptual threshold for rhythm-game timing** by a factor of 25-90, and well below the variance of the human input pipeline (which is itself bounded by USB poll rate, OS scheduler quantum, and key-switch travel - typically 5-15 ms combined).
+**Why this is acceptable**. The Perfect window is 50 ms; the Good window is 150 ms. An expected smoothed-clock error of a few milliseconds is a small fraction of the Perfect window and well below the variance of the human input pipeline (USB poll rate + OS scheduler quantum + key-switch travel, typically 5-15 ms combined). The smoothed clock keeps timing error below the perceptual threshold for a 4-lane, Tap-only demo.
 
-**Conclusion**. Audio-callback-driven anchors with a lock-free SPSC ring (the v2 path in §37) would reduce expected error from ~1.2 ms to ~50 us. The improvement is real but unobservable to the player at v1 scope (4 lanes, 60-144 Hz, Tap-only). Spending half of the 48-hour budget on lock-free plumbing to gain unobservable accuracy fails the scope-discipline test that this project is partly built to demonstrate.
+**Conclusion**. Audio-callback-driven anchors with a lock-free SPSC ring (the **[v2]** path in §37) would reduce expected error from a few milliseconds to tens of microseconds. The improvement is real but unobservable to the player at this scope (4 lanes, 60-144 Hz, Tap-only). Building lock-free plumbing to gain unobservable accuracy fails the scope-discipline test that this project is partly built to demonstrate.
 
-This is the engineering judgment recorded for the interview answer: *measured, bounded, justified, with the alternative path documented and a concrete trigger condition for adopting it (240 Hz displays, 8+ lanes, VSRG difficulty).*
+This is the engineering judgment recorded for the interview answer: *bounded, justified, with the alternative path documented and a concrete trigger condition for adopting it (240 Hz displays, 8+ lanes, VSRG difficulty), and the measurement to confirm the bound itself queued as committed work.*
 
 ## 19. Input architecture
 
 ### 19.1 Event model
 
+Actual definitions (`platform/InputEvent.h`, **[Shipped]**):
+
 ```cpp
-// platform/InputEvent.h
+using HostNanos    = std::int64_t;
+using Milliseconds = std::int32_t;
+
 enum class InputAction : std::uint8_t {
     Lane0, Lane1, Lane2, Lane3,
-    Pause, Restart, ToggleDebug, CycleCalibration
+    Escape, Enter, ToggleDebug,
+    NavUp, NavDown, NavLeft, NavRight,
+    Level1, Level2, Level3, Level4
 };
 
 struct InputEvent final {
-    InputAction  action      = InputAction::Lane0;
-    bool         pressed     = false;
-    std::uint8_t _pad0       = 0;
-    std::uint8_t _pad1       = 0;
-    HostNanos    eventHostNs = 0;     // captured at OS event arrival
-    Milliseconds eventSongTimeMs = 0; // filled in by reverse-mapping (§19.3)
+    InputAction  action            = InputAction::Lane0;
+    bool         pressed           = false;
+    std::uint8_t _pad0             = 0;
+    std::uint8_t _pad1             = 0;
+    HostNanos    event_host_ns     = 0;   // captured at poll time
+    Milliseconds event_song_time_ms = 0;  // filled by reverse-mapping (§19.3)
 };
-static_assert(sizeof(InputEvent) == 16, "InputEvent layout drift.");
 ```
 
-`InputEvent` has no public default constructor that leaves `eventHostNs == 0`; either you have a real timestamp or you do not have an event.
+The enum models the actual control set: four lanes, Escape (pause/back), Enter (confirm), navigation arrows, and difficulty quick-select. There is no `Pause`/`Restart`/`CycleCalibration` action - Escape handles pause, and calibration uses NavLeft/NavRight inside the pause overlay. Adding `static_assert(sizeof(InputEvent) == 16)` to lock the layout is **[Planned]** polish.
 
 ### 19.2 IInputSource contract
+
+Actual contract (`SfmlInputSource`, **[Shipped]**):
 
 ```cpp
 class IInputSource {
 public:
     virtual ~IInputSource() = default;
-    // Drains OS events into a backend-owned static ring; returns a span of valid events for this frame.
-    // Returned span is invalidated on the next Poll() call.
-    virtual std::span<const InputEvent> Poll(HostNanos pollEnterHostNs) noexcept = 0;
+    // Drains OS events into a backend-owned static buffer; returns a span valid for this frame.
+    virtual std::span<InputEvent> Poll() noexcept = 0;
 };
 ```
 
-The backend (SFML implementation) holds a `std::array<InputEvent, kMaxEventsPerFrame>` buffer. `Poll()` drains the OS event queue, captures `eventHostNs` either from the OS-native timestamp (if available) or from `pollEnterHostNs`, and returns a span. **The platform layer never allocates per frame**; this satisfies invariant I-05 at the source.
+The SFML backend holds a `std::array<InputEvent, kMaxEventsPerFrame>` (`kMaxEventsPerFrame = 64`). `Poll()` drains the SFML event queue, stamps each event with `event_host_ns = steady_clock::now()` at poll time (`event_song_time_ms` is filled later by the main loop), and returns a span. **The platform layer never allocates per frame**, which is the source-side basis for the hot-path zero-allocation goal (I-05).
 
-If the queue overflows `kMaxEventsPerFrame` in a single frame, the oldest events are dropped and `Logger::Warn` records the breach. At 64 events/frame, this is effectively never hit by a human player (USB key rate ~125 Hz peak), but the contract is explicit.
+The span is mutable on purpose so the main loop can write `event_song_time_ms` in place. If a frame produces more than 64 events the overflow is currently dropped silently; adding a `Logger::Warn` on breach is **[Planned]** (trivial, but listed rather than claimed). Capturing the OS-native event timestamp instead of poll time is **[v2]**.
 
 ### 19.3 Reverse mapping into song time
 
 The `Application` main loop performs reverse mapping immediately after `Poll`:
 
 ```cpp
-auto events = inputSource.Poll(steady_clock_now_ns);
+auto events = inputSource.Poll();
 for (auto& e : events) {
-    e.eventSongTimeMs = clock.HostNsToSongTimeMs(e.eventHostNs + bindings.inputOffsetMs * 1'000'000);
+    e.event_song_time_ms = song_clock.HostNsToSongTimeMs(e.event_host_ns);
 }
-session.Update({arena, clock, events, frameMetrics});
+// events forwarded to the active screen's HandleInput
 ```
 
-Reverse mapping is the **only** sanctioned path from `eventHostNs` to song time. Using "frame start time" as a stand-in - common in tutorial code - is forbidden by I-03 and treated as a review-blocking smell.
+Reverse mapping through `SmoothedSongClock::HostNsToSongTimeMs` is the **only** path from `event_host_ns` to song time. Using "frame start time" as a stand-in - common in tutorial code - is forbidden by I-03. (The `input_offset_ms` term shown in v2.0 is gone: v1 applies its single calibration offset inside `JudgementSystem`, §18.7.)
 
 ### 19.4 Same-frame consumption invariant
 
-Input events MUST be consumed in the same frame in which they were polled. The platform-layer ring's lifetime extends only until the next `Poll()` call; storing an `InputEvent` past frame end is a use-after-free in the contract sense. `GameplaySession::Update` holds the span by value, copies any data it needs into its own per-frame structures, and never escapes the span.
+Input events are consumed in the same frame in which they were polled. The backend buffer's contents are only valid until the next `Poll()`; nothing stores an `InputEvent` past frame end. The active screen's `HandleInput` reads the span and copies anything it needs. **[Shipped]**
 
-### 19.5 Diagnostics
+### 19.5 Diagnostics [Planned]
 
-`LatencyHistogram` (in `diagnostics`) records `pollExit_to_judgeCommit` durations per frame at p50/p99 granularity, surfaced in the debug overlay and the results screen. This is the runtime artefact that supports the resume bullet "measured input pipeline latency end-to-end".
+A `LatencyHistogram` recording `poll_to_judge` durations at p50/p99, surfaced in the overlay and result screen, is committed work (§27). Until it lands, the document does not claim "measured end-to-end input latency"; the current overlay shows the last judgment delta only.
 
 ## 20. Chart loading and validation
 
 ### 20.1 Loader contract
 
+Actual contract (`rhythm/ChartLoader.h`, **[Shipped]**):
+
 ```cpp
+struct LoadError { std::string code; std::string message; };
+
 class ChartLoader final {
 public:
-    Result<FrozenChart> Load(std::filesystem::path path);
+    // Loads a chart in rfs-cpp-v1 format; `difficulty` selects a key under "difficulties".
+    std::optional<FrozenChart> Load(const std::filesystem::path& path,
+                                    const std::string& difficulty,
+                                    LoadError& out_error);
 };
 ```
 
-`Result<T>` (`util/Result.h`) is a small `std::expected`-shaped type carrying either a `FrozenChart` or a structured `LoadError { std::string code; std::string message; }`. Exceptions are caught at the loader boundary and converted to errors; gameplay code never sees an exception.
+The loader returns `std::optional<FrozenChart>` plus a structured `LoadError` out-parameter (an explicit, dependency-free alternative to `std::expected`). Exceptions are caught at the boundary and converted to errors; gameplay code never sees an exception.
 
-Loader steps:
+Loader steps (**[Shipped]**):
 
-1. Open file via `std::ifstream`; reject if missing.
-2. Parse with nlohmann/json. Parse errors map to `LoadError{"json.parse", ...}`.
-3. Verify `schemaVersion == 1`. Mismatch maps to `LoadError{"schema.version", ...}`. **No silent migration.**
-4. Hand off to `ChartValidator::Validate` (§20.2).
-5. Sort `notes_` by `(targetTimeMs, lane, id)` for deterministic ordering.
-6. Build `laneIndex_` per-lane index arrays.
-7. Return the constructed `FrozenChart`.
+1. Open the file; reject if missing.
+2. Parse JSON; parse errors map to a `LoadError`.
+3. Select the requested difficulty; build `notes_` from `{ id, time_ms, lane, visual_id }`.
+4. Sort `notes_` by time for deterministic forward traversal.
+5. Return the constructed `FrozenChart` (mutation is friend-only via `ChartLoader`).
 
-### 20.2 Validator contract
+### 20.2 Validator contract [Planned]
+
+A dedicated `ChartValidator` with structured failure codes is committed work, not yet in the code (today the loader does field-level checks inline and reports a single `LoadError`). The intended rule set, and its acceptance test `TestChartValidator`, are:
 
 | Rule | Failure code |
 |---|---|
-| `header.laneCount > 0 && header.laneCount <= kMaxLanes` | `chart.laneCount` |
-| Every note's `lane < header.laneCount` | `chart.lane` |
-| Every note's `targetTimeMs >= 0` | `chart.timeNegative` |
+| `lane_count > 0 && lane_count <= kLaneCount` | `chart.laneCount` |
+| Every note's `lane < lane_count` | `chart.lane` |
+| Every note's `time_ms >= 0` | `chart.timeNegative` |
 | Note `id` values unique across the chart | `chart.idDuplicate` |
-| `header.audioPath` not empty and file exists | `chart.audioMissing` |
-| `header.approachTimeMs in [200, 5000]` | `chart.approachOutOfRange` |
-| Notes form a stable order under `(targetTimeMs, lane, id)` | `chart.notSortable` |
+| `schemaVersion` matches the supported version | `chart.schema` |
 
-Empty-notes charts are accepted with `Logger::Warn`. Everything else is a hard rejection that lands the player in `ErrorState` with the failure code visible.
+Empty-notes charts are accepted with a warning. A schema-version field with hard rejection on mismatch lands here too. Until then, malformed charts fail to load and the error is shown on the loading screen.
 
 ### 20.3 What the loader is allowed to do
 
-The loader is the **only** place in the codebase allowed to:
-
-- Open a file.
-- Parse JSON.
-- Allocate persistent gameplay containers (`FrozenChart::notes_`, `laneIndex_`).
-
-After `Load` returns, none of these operations occur for the lifetime of the session.
+The loader is the **only** place allowed to open a file, parse JSON, and allocate the persistent `FrozenChart::notes_`. After `Load` returns, none of these operations occur for the lifetime of the session. **[Shipped]**
 
 ## 21. Note timeline and spawning
 
-### 21.1 Design constraint
+### 21.1 Design constraint [Shipped]
 
-The chart MUST NEVER be scanned in full per frame. All traversal proceeds via monotonic cursors.
+The chart is never scanned in full per frame. Both judgment and rendering traverse forward from a monotonic `next_idx` cursor over the time-sorted `FrozenChart::Notes()` span, and miss detection advances that cursor past resolved/expired notes.
 
-### 21.2 NoteTimeline
+### 21.2 NoteTimeline / SpawnScheduler [Planned]
+
+Today the cursor logic is inlined in `GameplayScreen` and `JudgementSystem`. Extracting it into named objects with explicit contracts is committed work (it is the same extraction that produces the headless `GameplaySession`, §24):
 
 ```cpp
+// [Planned]
 class NoteTimeline final {
 public:
     explicit NoteTimeline(const FrozenChart& chart) noexcept;
-
-    // Advance the global spawn cursor to the latest note whose
-    // (targetTimeMs - approachTimeMs) <= now. Returns the half-open range
-    // [previousSpawnIndex, newSpawnIndex) of newly-spawnable notes.
-    std::span<const NoteIndex> AdvanceSpawn(SongTime now) noexcept;
-
-    // Per-lane cursor read for the judgment system.
-    std::span<const NoteIndex> LaneSlice(LaneIndex lane) const noexcept;
-
+    // Advance the spawn cursor to the latest note whose (time_ms - approach) <= now;
+    // return the half-open range of newly-active notes.
+    std::span<const int> AdvanceSpawn(float now_ms) noexcept;
 private:
     const FrozenChart& chart_;
-    NoteIndex          spawnCursor_ = 0;
+    int spawn_cursor_ = 0;
 };
 ```
 
-### 21.3 SpawnScheduler
+A per-lane `LaneSlice` (so judgment skips the lane filter entirely) is **[v2]** and only pays off at higher lane counts.
 
-```cpp
-class SpawnScheduler final {
-public:
-    SpawnScheduler(const FrozenChart& chart, NoteTimeline& timeline, RuntimeStore& store) noexcept;
-    void Tick(SongTime now) noexcept;   // marks newly-spawnable runtime states as Active
-};
-```
-
-### 21.4 Complexity targets
+### 21.3 Complexity (current behavior) [Shipped]
 
 | Operation | Complexity | Notes |
 |---|---|---|
-| Spawn per frame | O(notes spawned this frame) | Typically 0-1 per frame at v1 chart density. |
-| Miss retirement per frame | O(notes expiring this frame) | Same. |
-| Judgment lookup per input | O(k) lane-local, k <= 2 in practice | Bounded by goodWindow / inter-note spacing. |
-| Render per frame | O(active notes) | Active notes <= ~20 at peak density. |
+| Active-note scan per frame | O(active notes) | Forward from `next_idx` within the approach window. |
+| Miss retirement per frame | O(notes expiring this frame) | `DetectMisses` advances `next_idx`. |
+| Judgment lookup per input | O(k) near the cursor | Bounded by the Good window / inter-note spacing. |
+| Render per frame | O(active notes) | Active notes are few at v1 chart density. |
 
 ## 22. Judgment system (command pattern, pure function)
 
 ### 22.1 Judgment contract
 
+Actual command types (`rhythm/JudgeCommand.h` + `rhythm/JudgeCommandBuffer.h`, **[Shipped]**):
+
 ```cpp
-// rhythm/JudgmentCommand.h
-enum class HitRating : std::uint8_t { Perfect, Great, Good };
+enum class JudgeResult { Perfect, Great, Good, Miss };
 
-struct JudgmentCommand final {
-    NoteIndex   noteIndex;
-    HitRating   rating;
-    std::int16_t deltaMs;
-};
-
-struct MissCommand final {
-    NoteIndex   noteIndex;
+struct JudgeCommand {
+    int         note_index = -1;
+    JudgeResult result     = JudgeResult::Miss;
+    enum class Kind { AutoMiss, TapHit } kind = Kind::AutoMiss;
 };
 
 template <std::size_t Capacity>
-class StaticBuffer { /* trivially-copyable; std::array + size_t cursor; no heap */ };
+struct StaticCommandBuffer {           // trivially-copyable; std::array + count; no heap
+    std::array<JudgeCommand, Capacity> data{};
+    std::size_t count = 0;
+    void Push(JudgeCommand);
+    std::span<const JudgeCommand> Span() const;
+    void Clear();
+};
 
-using JudgmentCommandBuffer = StaticBuffer<kMaxLanes>;
-using MissCommandBuffer     = StaticBuffer<32>;
+using TapCommandBuffer  = StaticCommandBuffer<8>;
+using MissCommandBuffer = StaticCommandBuffer<32>;
 ```
 
-`JudgmentCommandBuffer` is a stack-allocated small-vector. Its capacity is bounded by `kMaxLanes` because at most one judgment can be emitted per lane per frame.
+A single `JudgeCommand` type carries both tap hits and auto-misses, discriminated by `Kind`. Buffers are stack-allocated fixed-capacity arrays - no heap on the judgment path.
 
-### 22.2 Judgment configuration
+### 22.2 Judgment configuration [Shipped]
 
 ```cpp
-struct JudgmentConfig final {
-    Milliseconds perfectWindowMs = 35;
-    Milliseconds greatWindowMs   = 70;
-    Milliseconds goodWindowMs    = 110;
-    Milliseconds missWindowMs    = 130;
+struct JudgementConfig {
+    std::int32_t perfect_window_ms = 50;
+    std::int32_t great_window_ms   = 100;
+    std::int32_t good_window_ms    = 150;
 };
 ```
 
-### 22.3 Pure-function signature
+`JudgementConfig` is constructor-injected (`explicit JudgementSystem(JudgementConfig config = {})`) and read back via `Config()`; windows are never hard-coded in the algorithm. There is intentionally **no** `miss_window_ms`: in v1 the Good window doubles as the miss boundary (a note further than `good_window_ms` from its time is a miss). A separate, wider miss dead zone is **[v2]** and is a one-field change here plus its test.
+
+### 22.3 Pure-function signature [Shipped]
+
+`JudgementSystem` exposes two pure decision methods - `JudgeTaps` (for this frame's key presses) and `DetectMisses` (for notes past the boundary). Both are `const`, read a `const` chart + snapshot, and return a buffer by value; neither mutates input. That const-in / value-out shape is the type-level expression of invariant I-04.
 
 ```cpp
-class JudgmentSystem final {
+class JudgementSystem {
 public:
-    explicit JudgmentSystem(JudgmentConfig config) noexcept;
+    explicit JudgementSystem(JudgementConfig config = {}) noexcept;
+    const JudgementConfig& Config() const noexcept;
 
-    // Pure function. Reads only; produces commands. Does not mutate any input.
-    JudgmentCommandBuffer Judge(
-        const FrozenChart&             chart,
-        std::span<const NoteRuntime>   runtimeStates,         // by const span
-        std::span<const std::uint32_t> laneCursors,
-        std::span<const InputEvent>    laneInputs,            // already filtered to lane events
-        SongTime                       /* hint, unused for now */) const noexcept;
-
-private:
-    JudgmentConfig config_;
+    // Pure: read const state, return commands by value.
+    TapCommandBuffer  JudgeTaps(const FrozenChart&, const GameplaySnapshot&,
+                                std::span<const InputEvent>, float now_ms,
+                                std::int32_t song_offset_ms) const;
+    MissCommandBuffer DetectMisses(const FrozenChart&, const GameplaySnapshot&,
+                                   float now_ms, std::int32_t song_offset_ms) const;
 };
 ```
 
-The signature itself is the strongest invariant in this section: `runtimeStates` is `const`, `Judge` is `const`, the return value is by value. The static type system prevents `JudgmentSystem` from accidentally entangling itself with mutable runtime state. This satisfies invariant I-04 at the type level.
+(Signatures abbreviated to the load-bearing parameters; see `rhythm/JudgementSystem.h` for the exact list.)
 
-### 22.4 Algorithm
+### 22.4 Tap algorithm [Shipped]
 
-```cpp
-JudgmentCommandBuffer JudgmentSystem::Judge(
-    const FrozenChart& chart,
-    std::span<const NoteRuntime> runtimeStates,
-    std::span<const std::uint32_t> laneCursors,
-    std::span<const InputEvent> laneInputs,
-    SongTime /*now*/) const noexcept
-{
-    JudgmentCommandBuffer out;
+`JudgeTaps` scans notes forward from the snapshot's `next_idx`, skips resolved notes and notes in other lanes, and keeps the unresolved same-lane note with the smallest `|input_song_time_ms - (time_ms + song_offset_ms)|` within the Good window, stopping early once future notes leave the window. The chosen note is rated Perfect/Great/Good by absolute delta and pushed as a `TapHit` `JudgeCommand`. No allocation, no mutation, no exceptions.
 
-    for (const auto& evt : laneInputs) {
-        if (!evt.pressed) continue;
-        const auto lane = LaneFromAction(evt.action);
-        if (lane >= kMaxLanes) continue;
+### 22.5 Miss detection [Shipped]
 
-        const auto laneSlice = chart.LaneSlice(lane);
-        const auto cursor    = laneCursors[lane];
-
-        std::int32_t bestAbs   = std::numeric_limits<std::int32_t>::max();
-        NoteIndex    bestIndex = NoteIndex(-1);
-        std::int32_t bestDelta = 0;
-
-        for (std::uint32_t k = cursor; k < laneSlice.size(); ++k) {
-            const NoteIndex idx = laneSlice[k];
-            if (runtimeStates[idx].state != NoteRuntimeState::Active &&
-                runtimeStates[idx].state != NoteRuntimeState::Pending) {
-                continue;
-            }
-            const auto target = chart.Notes()[idx].targetTimeMs;
-            const auto delta  = evt.eventSongTimeMs - target;
-            const auto abs_   = std::abs(delta);
-            if (abs_ > config_.goodWindowMs) {
-                if (delta < 0) break;       // future notes too far away; stop scanning
-                continue;                   // past notes already accounted for by miss detector
-            }
-            if (abs_ < bestAbs) {
-                bestAbs = abs_; bestIndex = idx; bestDelta = delta;
-            }
-        }
-
-        if (bestIndex == NoteIndex(-1)) continue;
-
-        HitRating rating;
-        if      (bestAbs <= config_.perfectWindowMs) rating = HitRating::Perfect;
-        else if (bestAbs <= config_.greatWindowMs)   rating = HitRating::Great;
-        else                                         rating = HitRating::Good;
-
-        out.PushBack({bestIndex, rating, static_cast<std::int16_t>(bestDelta)});
-    }
-    return out;
-}
-```
-
-No allocations. No mutation of inputs. No exceptions. The function is a candidate for `consteval` testing in principle.
-
-### 22.5 MissDetector
-
-```cpp
-class MissDetector final {
-public:
-    MissCommandBuffer Detect(
-        const FrozenChart&             chart,
-        std::span<const NoteRuntime>   runtimeStates,
-        std::span<const std::uint32_t> laneCursors,
-        SongTime                       now,
-        Milliseconds                   missWindowMs) const noexcept;
-};
-```
-
-`Detect` walks each lane forward from its cursor until it finds the first not-yet-finalised note whose `targetTimeMs + missWindowMs >= now`. Everything before that boundary that is still `Pending` or `Active` becomes a `MissCommand`. Same purity contract as `Judge`.
+`DetectMisses` walks forward from `next_idx`; any unresolved note with `now_ms - (time_ms + song_offset_ms) > good_window_ms` becomes an `AutoMiss` `JudgeCommand`. Same purity contract as `JudgeTaps`. Folding both into a single explicit Decide phase inside a headless session is the **[Planned]** refactor (§24).
 
 ## 23. Score system
 
-### 23.1 Responsibilities
+### 23.1 What is shipped
 
-`ScoreSystem` owns score, combo, max combo, judgment counts, signed-offset accumulator, and judged count. It exposes a write surface only for `Apply`.
+Scoring is implemented as **pure free functions** in `game/GameRules.h`, not a class: **[Shipped]**
 
-### 23.2 Interface
+- `Scoring::EarnScore(result, combo)` - the Q16 base x multiplier from §6.8 (`int64_t` intermediate, `>> 16`); no `float`.
+- `Grading::Accuracy(perfect, great, good, total)` and the letter-grade mapping - the display ratio from §6.9 (`float`, presentation-only).
+
+The mutable counters (score, combo, max combo, per-judgment counts) currently live as members of `GameplayScreen`, updated in `ApplyCommand`. Keeping scoring as stateless functions makes them trivial to unit-test in isolation, which is exactly what `TestScoreSystem` (§29) will exercise.
+
+### 23.2 Planned extraction
+
+Pulling the counters out of `GameplayScreen` into a small `ScoreSystem` value type is **[Planned]** as part of the headless session (§24). The intended shape:
 
 ```cpp
+// [Planned]
 class ScoreSystem final {
 public:
     void Reset() noexcept;
-    void ApplyJudgment(const JudgmentCommand& cmd) noexcept;
-    void ApplyMiss(const MissCommand& cmd) noexcept;
-
-    std::int64_t Score()       const noexcept { return score_; }
-    std::int32_t Combo()       const noexcept { return combo_; }
-    std::int32_t MaxCombo()    const noexcept { return maxCombo_; }
-    float        Accuracy01()  const noexcept;       // computed lazily
-
-    struct Summary {
-        std::int64_t score; std::int32_t combo; std::int32_t maxCombo;
-        std::int32_t perfect; std::int32_t great; std::int32_t good; std::int32_t miss;
-        float        meanSignedOffsetMs; float accuracy01;
-    };
-    Summary BuildSummary() const noexcept;
-
-private:
-    std::int64_t score_           = 0;
-    std::int32_t combo_           = 0;
-    std::int32_t maxCombo_        = 0;
-    std::int32_t perfect_         = 0;
-    std::int32_t great_           = 0;
-    std::int32_t good_            = 0;
-    std::int32_t miss_            = 0;
-    std::int64_t signedOffsetSumMs_ = 0;
-    std::int32_t judgedCount_     = 0;
+    void Apply(const JudgeCommand& cmd) noexcept;   // delegates to Scoring::EarnScore
+    std::int64_t Score()    const noexcept;
+    std::int32_t Combo()    const noexcept;
+    std::int32_t MaxCombo() const noexcept;
+    // ... per-judgment counts + lazy Accuracy01() / BuildSummary()
 };
 ```
 
-`ApplyJudgment` uses the Q16 multiplier from §6.8; floating-point is forbidden in this path.
+The motivation is testability and giving the result screen a single summary object, not new gameplay behavior - the scoring math is already shipped and correct.
 
 ## 24. GameplaySession
 
-### 24.1 Role
+> **Status: [Planned].** This is the single most important refactor in the wrap-up backlog (§30). Today the per-frame logic lives inside `GameplayScreen` (which also touches the renderer and input directly). The decision/commit *shape* already exists - `JudgeTaps`/`DetectMisses` are pure and return buffers, `ApplyCommand` is the mutation point - but it is not yet behind a headless, side-effect-free `GameplaySession` object. Extracting it is what unlocks the headless tests in §29. The section below describes the target, honestly tagged.
 
-`GameplaySession` orchestrates a single song attempt. It owns the `RuntimeStore`, the `JudgmentSystem`, the `MissDetector`, the `ScoreSystem`, the `NoteTimeline`, the `SpawnScheduler`, and the `GameplayViewModel`. It does **not** own audio, input, or rendering surfaces.
+### 24.1 Role [Planned]
 
-### 24.2 Per-frame pipeline (the architectural claim)
+A headless `GameplaySession` would orchestrate a single song attempt, owning the `RuntimeStore`, `JudgementSystem`, `MissDetector`, `ScoreSystem`, `NoteTimeline`, and `GameplayViewModel`, while owning **no** audio, input, or rendering surface. Crucially it would have no SFML/miniaudio dependency, so a test can drive it frame-by-frame with synthetic input and a `MockAudioBackendClock`.
+
+### 24.2 Per-frame pipeline (the target shape) [Planned]
 
 ```cpp
 void GameplaySession::Update(const FrameContext& ctx, std::span<const InputEvent> events) {
@@ -1280,13 +1142,15 @@ Every phase is named, ordered, and observable. The Decide phase does not mutate.
 
 ### 24.3 Why this matters (interview answer)
 
-A typical "naive" implementation has `JudgmentSystem` mutating the runtime array in-place. That couples the unit test to a mutable runtime, makes `Judge` non-`const`, and conflates "what to do" with "doing it". Splitting along Read/Decide/Commit:
+A typical "naive" implementation has the judgment system mutating the runtime array in-place. That couples the unit test to a mutable runtime, makes the judge non-`const`, and conflates "what to do" with "doing it". Keeping the decide/commit split (already true of `JudgeTaps`/`DetectMisses`):
 
-- Lets `JudgmentSystem` be a `const` pure function tested without runtime fixtures.
+- Lets `JudgementSystem` stay a set of `const` pure functions tested without runtime fixtures.
 - Makes the commit phase the single auditable mutation point - useful for replay (see §38) and for assertions.
 - Mirrors the data-pipeline shape of modern ECS systems, which is what the interviewer is checking for.
 
-### 24.4 GameplayViewModel
+### 24.4 GameplayViewModel [Planned]
+
+A dedicated, renderer-facing view model is part of the same extraction. Today `GameplayScreen::Render` projects notes directly from the chart + snapshot; the type below formalizes that projection into a reusable, pre-reserved buffer.
 
 ```cpp
 struct NoteView final {
@@ -1320,23 +1184,38 @@ private:
 
 ### 25.1 Read-only projection
 
-The renderer reads `GameplayViewModel`. It MUST NOT decide hits, advance cursors, mutate score, or touch the runtime store. The compile-time evidence is that `GameplayRenderer` accepts only `const GameplayViewModel&`.
+The renderer is a write-only sink: it decides no hits, advances no cursors, and mutates no score or runtime state. Screens read game state and submit draw structs; the renderer just rasterizes them. **[Shipped]**
 
-### 25.2 IRenderer contract
+### 25.2 IRenderer contract [Shipped]
+
+Actual interface (`platform/IRenderer.h`). It is a generic immediate-mode submission API built on plain draw structs, not a rhythm-specific one:
 
 ```cpp
+struct TextDraw { float x, y; Anchor anchor; TextStyle style; std::string text;
+                  std::uint32_t rgba; std::uint32_t outline_rgba; float outline_thickness; };
+struct LineDraw { float x0, y0, x1, y1; std::uint32_t rgba; };
+struct QuadDraw { float x, y, w, h; std::uint32_t rgba; };
+
 class IRenderer {
 public:
-    virtual ~IRenderer() = default;
+    virtual void SetWindowSize(float w, float h) = 0;   // fonts scale with window height
     virtual void BeginFrame() = 0;
-    virtual void SubmitNoteQuad(LaneIndex lane, float y01, std::uint16_t visualId) = 0;
-    virtual void SubmitText(float x, float y, std::string_view text, std::uint32_t rgba) = 0;
-    virtual void SubmitLine(float x0, float y0, float x1, float y1, std::uint32_t rgba) = 0;
+    virtual void Clear(std::uint8_t r, std::uint8_t g, std::uint8_t b) = 0;
     virtual void EndFrame() = 0;
+    virtual void SubmitText(const TextDraw&) = 0;
+    virtual void SubmitLine(const LineDraw&) = 0;
+    virtual void SubmitQuad(const QuadDraw&) = 0;
+    virtual void SubmitSprite(float x, float y, float w, float h, int tex, float alpha = 1.f) = 0;
+    virtual float MeasureTextWidth(std::string_view, TextStyle) = 0;
+    virtual int  LoadTexture(const std::string&) = 0;
+    virtual int  LoadTextureAsync(const std::string&) = 0;   // async asset loading
+    virtual void PollAsyncLoads() = 0;
+    virtual bool IsTextureReady(int handle) = 0;
+    virtual bool GetTextureSize(int handle, float& w, float& h) = 0;
 };
 ```
 
-Immediate-mode submission, no view-model retention, no per-frame allocation in the implementation (SFML shapes/text are pooled in `SfmlRenderer`).
+A note quad is just a `SubmitQuad` with lane-derived `x` and song-time-derived `y`; there is no rhythm-specific `SubmitNoteQuad`. This generality is what lets the same renderer drive menus, the loading screen, the HUD, and gameplay. Implementation (`SfmlRenderer`) reuses pooled `sf::Text`/shape objects rather than allocating per frame.
 
 ### 25.3 Draw order
 
@@ -1354,7 +1233,9 @@ All `sf::Text` / `sf::RectangleShape` objects used by `SfmlRenderer`, `HudRender
 
 ## 26. Memory contracts
 
-### 26.1 Three memory domains
+> **Status: [Planned] for the entire section.** None of `FramePmrArena`, `AllocationGuard`/`RFS_HOTPATH_*`, the PMR concept guard, or the budget table exist in the code today. This is the design I will implement against the headless `GameplaySession` (§24), and it is the highest-signal item in the wrap-up backlog (§30) for the systems/high-performance direction I am moving toward. It is documented here in full as the implementation blueprint, with each piece tagged. **Acceptance signal for the whole section: 60 seconds of play in a debug build reports zero counted hot-path allocations, and the overlay shows a non-trivial frame-arena high-water mark.**
+
+### 26.1 Three memory domains [Planned]
 
 | Domain | Lifetime | Allocator | Allowed in hot path |
 |---|---|---|---|
@@ -1466,7 +1347,9 @@ Each row carries a measurement source and an enforcement action. "It feels fast"
 
 ## 27. Diagnostics and profiling
 
-### 27.1 ScopedTimer
+> **Status.** What ships today is a **basic debug overlay** (F1): current song time, calibration offset, last-judgment delta, current note index, and frame time. The richer machinery below - `ScopedTimer`, the 256-frame `FrameMetrics` ring with p50/p99, and the `LatencyHistogram` - is **[Planned]** and lands together with the budget table (§26.5). The overlay mock-up in §27.4 is the *target* layout, not the current one.
+
+### 27.1 ScopedTimer [Planned]
 
 ```cpp
 class ScopedTimer final {
@@ -1483,7 +1366,7 @@ private:
 };
 ```
 
-### 27.2 FrameMetrics
+### 27.2 FrameMetrics [Planned]
 
 ```cpp
 struct FrameMetrics {
@@ -1502,11 +1385,13 @@ struct FrameMetrics {
 
 A 256-frame ring of `FrameMetrics` lives in `rfs_app::FrameMetricsRing`. The debug overlay queries p50 and p99 from this ring once per frame.
 
-### 27.3 LatencyHistogram
+### 27.3 LatencyHistogram [Planned]
 
-A bucketed histogram (powers of two from 50 us to 32 ms) recording `pollExitHostNs - judgeCommitHostNs` per input event. The results screen prints p50/p95/p99/max. This is the artefact backing the resume claim "measured input latency end-to-end".
+A bucketed histogram (powers of two from 50 us to 32 ms) recording `poll_to_judge` per input event, with the result screen printing p50/p95/p99/max. Once shipped, this becomes the artefact that backs a "measured input latency end-to-end" claim - which, until then, the resume and §32 do **not** make.
 
-### 27.4 Debug overlay layout
+### 27.4 Debug overlay layout (target) [Planned]
+
+The current overlay shows a subset (song time, offset, last delta, note index, frame time). The full layout below is the target after §26-27 land:
 
 ```text
 FPS:              144 (delta 6.94 ms)
@@ -1522,254 +1407,251 @@ Last judgment:    Perfect  delta -8 ms
 
 ## 28. Error handling
 
-### 28.1 Philosophy
+### 28.1 Philosophy [Shipped]
 
-Loading code fails loudly with structured error codes; gameplay code never fails. Exceptions do not cross the loader boundary. The `Result` type is the only sanctioned error channel from `rfs_core`.
+Loading code fails loudly with structured error codes; gameplay code never fails. Exceptions do not cross the loader boundary. The loader's `std::optional<FrozenChart>` + `LoadError` out-parameter (§20.1) is the error channel out of `rfs_core`.
 
 ### 28.2 Error matrix
 
-| Failure | Behaviour |
-|---|---|
-| Chart file missing | `ErrorState` with `chart.fileMissing` and the resolved path. |
-| JSON parse error | `ErrorState` with `json.parse` and the parser's line/column. |
-| Schema version mismatch | `ErrorState` with `schema.version`. |
-| Validator rule failure | `ErrorState` with the rule code from §20.2. |
-| Audio file missing | `ErrorState` unless `--silent-debug` is set, in which case run with a `SilentAudioBackendClock`. |
-| miniaudio init failure | Fall back to `SfmlAudioPlayer`, log `audio.backend.degraded`, continue. |
+| Failure | Behaviour | Status |
+|---|---|---|
+| Chart file missing | `LoadError`; the loading screen shows the error in place (Esc to go back). | [Shipped] |
+| JSON parse error | `LoadError` with a parse code. | [Shipped] |
+| Missing difficulty key | `LoadError` (covered by `TestChartLoader`). | [Shipped] |
+| Schema version mismatch | dedicated `chart.schema` code via `ChartValidator`. | [Planned] |
+| Validator rule failure | structured rule code from §20.2. | [Planned] |
+| miniaudio init failure | currently surfaced as a load/playback error; SFML-audio fallback. | [v2] |
 
-### 28.3 Logger levels
+A dedicated `ErrorScreen` (rather than surfacing failures on the loading screen) is **[v2]** (§5.4).
 
-| Level | Use |
-|---|---|
-| Trace | Per-frame traces in dev builds only. |
-| Info | Boot, asset load, chart summary. |
-| Warn | Non-fatal config or runtime drift. |
-| Error | Cannot continue requested state. |
-| Fatal | Invariant breach; aborts. |
+### 28.3 Logging
 
-`Logger::Fatal` calls `std::abort` after flushing; this is what `RFS_HOTPATH_END` triggers on detected allocation.
+Diagnostic logging today is lightweight (console/`std::cerr`-style messages at load and key transitions). A leveled `Logger` (Trace/Info/Warn/Error/Fatal) with `Logger::Fatal` aborting after flush - the sink that the **[Planned]** `RFS_HOTPATH_END` guard (§26.3) traps into - is committed work alongside the diagnostics layer (§27).
 
 ## 29. Testing strategy
 
-### 29.1 Unit tests (in `rfs_tests`, link only `rfs_core` + `rfs_platform_iface`)
+### 29.1 Shipped tests (in `rfs_tests`, links only `rfs_core` + `rfs_platform_iface` + doctest)
 
-| Test | Purpose |
+12 doctest cases across 4 files, all running headless: **[Shipped]**
+
+| File | Cases (purpose) |
 |---|---|
-| `TestJudgmentSystem.PerfectBoundary` | `|delta| == perfectWindowMs` resolves to Perfect. |
-| `TestJudgmentSystem.GreatBoundary` | `|delta| == greatWindowMs` resolves to Great. |
-| `TestJudgmentSystem.OutsideGoodNoCommand` | `|delta| > goodWindowMs` produces empty buffer. |
-| `TestScoreSystem.ComboIncrementsAndCaps` | Q16 multiplier; cap at 100 combo. |
-| `TestScoreSystem.MissResetsCombo` | Combo resets to 0; max combo retained. |
-| `TestChartValidator.RejectsLaneOutOfRange` | Lane index >= laneCount rejected. |
-| `TestChartValidator.RejectsDuplicateIds` | Duplicate `NoteId` rejected. |
-| `TestNoteTimeline.SortedAfterLoad` | Notes are sorted; lane index slices are sorted within lane. |
-| `TestSmoothedSongClock.ReanchorPolicy` | Soft band EMA-blends; hard band increments counter. |
-| `TestPauseInvariant.ResumesFromFreezePoint` | `chartClock.NowMs()` continues from `T`, not `T + S`. |
+| `TestJudgementSystem.cpp` | +50 ms -> Perfect; +100 ms -> Great; +151 ms -> no command; tap with +50 offset -> Perfect at effective time; `DetectMisses` respects offset before effective+Good. |
+| `TestChartLoader.cpp` | loads a fixture difficulty; rejects missing file; rejects missing difficulty; validates catalog building; `AudioPathResolver` resolves clips; `SongDisplay` parses song info. |
+| `TestSmoothedSongClock.cpp` | clock interpolates correctly through a freeze/resume cycle. |
 
-### 29.2 Macro invariant test
+These pin the load-bearing behavior: judgment windows, offset handling, chart loading/validation paths, and clock freeze. They satisfy invariant I-08 (headless, no window/audio device).
+
+### 29.2 Planned tests
+
+The following are committed and depend on the §23/§24 extraction (a `ScoreSystem` value type, a `ChartValidator`, and a headless `GameplaySession` + `MockAudioBackendClock`):
+
+- **`TestScoreSystem`** - Q16 multiplier increments and caps at combo 100; miss resets combo, retains max. **[Planned]**
+- **`TestChartValidator`** - rejects lane-out-of-range, duplicate ids, negative times, schema mismatch. **[Planned]**
+- **`TestPauseInvariant`** - resume continues song time from `T`, not `T + S`; exactly one hard reanchor. **[Planned]**
+- **`TestPerfectRunInvariant`** (the macro invariant) - drive a headless session frame-by-frame with simulated perfect inputs; assert all-Perfect, zero misses, and `score == ExpectedMaxScore(chart)`. **[Planned]**
 
 ```cpp
-TEST_CASE("PerfectRunInvariant: simulating perfect inputs produces theoretical max score") {
-    auto chart = ChartLoader{}.Load("assets/charts/demo_fruit_loop_01.json").value();
-    GameplaySession session(chart, MakeMockClock(), DefaultRhythmConfig());
-
-    const auto perfectInputs = SimulatePerfectInputs(chart, /*offset=*/0);
-
-    while (!session.IsFinished()) {
-        session.Update({.events = perfectInputs.NextFrame()});
-    }
-    const auto summary = session.GetSummary();
-
-    REQUIRE(summary.miss == 0);
-    REQUIRE(summary.great == 0);
-    REQUIRE(summary.good == 0);
-    REQUIRE(summary.perfect == chart.Notes().size());
-    REQUIRE(summary.score == ExpectedMaxScore(chart));
-    REQUIRE(summary.accuracy01 == doctest::Approx(1.0f));
+// [Planned] - shape of the macro invariant test
+TEST_CASE("PerfectRunInvariant: perfect inputs produce the theoretical max score") {
+    auto chart = ChartLoader{}.Load(kFixtureChart, "easy", err).value();
+    GameplaySession session(chart, MockAudioBackendClock{}, JudgementConfig{});
+    auto inputs = SimulatePerfectInputs(chart);
+    while (!session.IsFinished()) session.Update(inputs.NextFrame());
+    const auto s = session.Summary();
+    REQUIRE(s.miss == 0); REQUIRE(s.great == 0); REQUIRE(s.good == 0);
+    REQUIRE(s.perfect == std::ssize(chart.Notes()));
+    REQUIRE(s.score == ExpectedMaxScore(chart));
 }
 ```
 
-This single test exercises the entire core (loader -> validator -> session -> judgment -> score) under a deterministic clock. CI gates on this passing.
+This is the single most valuable planned test: it exercises loader -> judgment -> score end-to-end under a deterministic clock, and it is the reason the headless-session extraction (§24) is prioritized.
 
-### 29.3 What is out of v1 test scope
+### 29.3 Out of test scope
 
-- Property-based testing (Catch2 / doctest generators). Recorded as a §37 evolution.
-- Fuzzing of `ChartLoader`. Recorded as a §37 evolution.
-- Visual regression. Out of scope.
+- Property-based / generator testing - **[v2]** (§37).
+- Fuzzing of `ChartLoader` - **[v2]**.
+- Visual regression - out of scope.
 
-### 29.4 Manual QA gate
+### 29.4 Manual QA checklist
 
-Before committing the demo recording:
+1. Cold start; no platform warning.
+2. Hit each lane; correct mapping.
+3. Force misses; combo resets, miss count increments.
+4. Pause mid-song, wait, resume; song time continues from the pause point (the shipped freeze behavior, §18.6).
+5. Return to song select and replay; state is reset.
+6. (After §26-27 land) inspect the overlay across 60 s for zero hot-path allocations and bounded frame time.
 
-1. Cold start; observe no platform warning.
-2. Hit each lane; observe correct mapping.
-3. Force misses; observe combo reset and miss count increment.
-4. Pause at song mid-point; sleep 30 s; resume. Observe song-time continues from pause point and `hardReanchorCount` increments by exactly 1.
-5. Restart; observe runtime arrays cleared.
-6. Inspect debug overlay across 60 s; observe p99 update <= 1.0 ms and zero hot-path allocations.
+## 30. Wrap-up backlog (committed work)
 
-## 30. Implementation sprint plan
+The core is shipped and playable. This is the prioritized, committed backlog that turns the **[Planned]** tags in this document into code. It is ordered so each item unlocks the next, and each carries an explicit acceptance signal. This list is the honest "what's next", not a time-boxed sprint.
 
-The sprint runs against the time budget below. Each task carries a hard cap; on breach, the documented fallback fires and the document is updated to reflect what was actually shipped.
+### 30.1 Priority 1 - Headless session extraction (unlocks everything else)
 
-### Day 1 - Skeleton up (~6 hours)
+- Extract a `GameplaySession` out of `GameplayScreen`: own `RuntimeStore` + `ScoreSystem`, expose `Update(events, song_time)` and `Summary()`, with **no** SFML/miniaudio dependency (§24).
+- Add a `MockAudioBackendClock` implementing `IAudioBackendClock` (§18.2, §29).
+- **Acceptance:** `rfs_tests` can construct and step a `GameplaySession` headlessly; existing 12 tests still pass.
 
-| # | Task | Cap | Fallback on breach |
-|---|---|---:|---|
-| 1.1 | CMake topology + dependency guard + SFML find_package + miniaudio include | 1.5 h | Drop dependency guard to runtime check (configure-time gate retained as comment). |
-| 1.2 | `Application`, `GameLoop`, `StateStack`, `IGameState`, `MainMenuState`, `LoadingState` skeletons | 1.0 h | Inline `MainMenu`/`Loading` into `Application` for v1. |
-| 1.3 | `SfmlWindow` + `SfmlInputSource` (timestamps via `steady_clock::now()` at poll entry) + `SfmlRenderer` (immediate-mode submit) | 1.5 h | Use SFML default examples and adapt. |
-| 1.4 | `FrozenChart` + `ChartLoader` + `ChartValidator` + load demo chart | 1.0 h | Hard-code chart in C++ literal. |
-| 1.5 | `MiniaudioAudioPlayer` + `MiniaudioBackendClock` (main-thread polling) | 1.5 h | Fall back to `sf::Music` + `getPlayingOffset` with audio-backend-degraded note. |
+### 30.2 Priority 2 - Invariant tests
 
-**Day 1 acceptance**: window opens, demo chart loads, audio plays, four lanes render with falling placeholders driven by `SmoothedSongClock`. No judgment yet.
+- `TestScoreSystem`, `TestChartValidator`, `TestPauseInvariant`, and the `TestPerfectRunInvariant` macro test (§29.2).
+- Promote chart validation into a `ChartValidator` with structured codes (§20.2).
+- **Acceptance:** perfect-run test asserts theoretical max score under a deterministic clock; CI runs `rfs_tests` (§31/CI).
 
-### Day 2 - Core gameplay (~10 hours)
+### 30.3 Priority 3 - Memory contract (the systems-direction signal)
 
-| # | Task | Cap | Fallback on breach |
-|---|---|---:|---|
-| 2.1 | `SmoothedSongClock` + `ChartClock` + drift/reanchor + pause invariants (with unit test) | 1.5 h | Skip EMA smoothing; document degraded clock. |
-| 2.2 | `JudgmentSystem` pure function + `MissDetector` + unit tests | 2.5 h | Inline judgment into session; tests still required. |
-| 2.3 | `RuntimeStore::Apply` + `LaneCursors` + `SpawnScheduler` | 1.5 h | n/a (critical path). |
-| 2.4 | `GameplaySession::Update` 5-phase pipeline + `FrameContext` plumbing | 1.5 h | n/a (critical path). |
-| 2.5 | `ScoreSystem` + Q16 multiplier + unit tests | 1.0 h | n/a. |
-| 2.6 | `FramePmrArena` + `RFS_HOTPATH_BEGIN/END` macros + operator-new override | 1.5 h | Land macros as `((void)0)` and document I-05 as "tracked in dev branch". |
-| 2.7 | `Pause`/`Restart`/`Results` states | 0.5 h | Restart-only, no pause. |
+- `FramePmrArena` (64 KB, reset per frame), `RFS_HOTPATH_BEGIN/END`, debug `operator new` counter (§26).
+- **Acceptance:** 60 s of debug play reports zero counted hot-path allocations; the overlay shows a bounded frame-arena high-water mark.
 
-**Day 2 acceptance**: end-to-end playable; one chart playable to results; judgments correct under simulated perfect inputs; debug build observes zero hot-path allocations across 60 seconds of play.
+### 30.4 Priority 4 - Diagnostics + measurement
 
-### Day 3 - Reviewer polish (~8 hours)
+- `ScopedTimer`, 256-frame `FrameMetrics` ring (p50/p99), `LatencyHistogram`; reanchor counters surfaced (§27, §18.5).
+- **Acceptance:** the overlay/result screen show measured update p50/p99 and input-to-judge latency; the §18.8 timing bound is empirically confirmed.
 
-| # | Task | Cap | Fallback on breach |
-|---|---|---:|---|
-| 3.1 | `FrameMetrics` ring + `LatencyHistogram` + debug overlay layout | 1.5 h | Drop p50/p99; show only current frame numbers. |
-| 3.2 | `GameplayViewModel` reserved capacity + visible-notes projection | 1.5 h | Stream notes directly to renderer (allocation risk: re-audit). |
-| 3.3 | README rewrite (architecture diagram, clock pipeline, memory contract table, build instructions) | 1.5 h | Bullet-list README. |
-| 3.4 | 30-60 s screen recording + GIF | 1.0 h | Static screenshots. |
-| 3.5 | 1.5 h buffer for inevitable bugs | 1.5 h | n/a. |
-| 3.6 | Resume bullets + cover-letter snippet + LinkedIn outreach draft | 1.0 h | Ship with resume bullets only. |
+### 30.5 Priority 5 - CI test gate + polish
 
-**Day 3 acceptance**: repository is review-ready; demo recording exists; README covers the four technical claims; resume material drafted.
+- Extend CI to build and run `rfs_tests` on every push (today it only packages `rfs_demo`, §31/CI).
+- `static_assert` on `InputEvent`/`NoteDef` layout; `Logger::Warn` on input overflow; `NoteType` enum.
+- Add `LICENSE`, a `docs/` folder, and a short demo GIF/recording.
+- **Acceptance:** a red `rfs_tests` blocks merges; repo has license + demo media.
 
-### 30.4 Time budget guardrails
+### 30.6 Working rule
 
-Two budget rules govern this sprint and are enforced by the engineer (not by tooling):
-
-1. **No green-field architecture work after Day 2 noon.** From that point forward, every change ships toward the v1 acceptance gates or it does not happen.
-2. **Documentation drift > 0 is a P0 bug.** If `audio.backend.degraded` fires, §13.3 and §18 are updated *in the same commit* that ships the fallback. The document never claims something the binary does not deliver.
+Documentation drift is treated as a defect: whenever one of these items lands, its **[Planned]** tag in this document flips to **[Shipped]** in the same change. The document is the contract; the code is the proof.
 
 ## 31. README structure
 
 ```markdown
 # Rhythm Fruit Shop C++ Core
 
-A native C++20 rhythm-game core with a layered timing pipeline,
-inverted platform boundary, command-driven judgment, and contractually-
-zero hot-path allocations.
+A native C++20 rhythm-game core with a deterministic, audio-cursor-driven
+timing pipeline, an inverted platform boundary enforced at build time, and
+a command-driven judgment flow. My first native C++ project, built to grow
+toward high-performance systems work.
 
-## Why this exists
-## 30-second demo
-## Build (Windows MSVC, Linux GCC)
-## Run
-## Architecture at a glance        (mermaid graph copied from §14.1)
-## Timing pipeline                 (L0 / L1 / L2 + numerical justification)
-## Memory contracts                (3 domains + RFS_HOTPATH macros)
-## Performance budget table        (copied from §26.5)
-## Tests
-## v1 vs v2 evolutions             (copied from §37)
+## Why this exists                 (the Unity -> native C++ pivot, honestly framed)
+## 30-second demo                  (GIF/screenshot)
+## Build (Windows MSVC) and Run
+## Architecture at a glance        (mermaid graph from §14.1)
+## Timing pipeline                 (two-layer clock + numerical justification, §18)
+## What's shipped vs planned       (the three-tier table - mirror this doc)
+## Tests                           (12 headless cases; how to run rfs_tests)
+## Roadmap                         (the §30 backlog: memory contract, metrics, CI gate)
 ## License
 ```
 
-The README is the entry point for a 10-minute review. It MUST be skimmable inside that window.
+The README is the entry point for a 10-minute review and must be skimmable in that window. It carries the same "shipped vs planned" honesty as this document - notably a clear note that audio/imported-chart data is demonstration-only.
 
-## 32. Resume bullets (production-grade phrasing)
+## 32. Resume bullets
 
-- Built `rhythm-fruit-shop-cpp-core`, a native C++20 rhythm-game core, around a layered song-time clock pipeline (sample-accurate `IAudioBackendClock` -> `SmoothedSongClock` with EMA reanchor -> `ChartClock` with calibration), eliminating frame-delta drift and absorbing audio-buffer jitter to a measured p99 song-time error of <= 1.2 ms.
-- Inverted the dependency graph between gameplay and platform: `rfs_core` is statically barred from linking SFML or miniaudio via a CMake configure-time guard, allowing the rhythm core, judgment system, and chart pipeline to compile and unit-test without a window or audio device.
-- Modelled judgment as a pure function `(FrozenChart, RuntimeView, LaneInputs, SongTime) -> JudgmentCommandBuffer` and structured the per-frame loop as Read/Decide/Commit/Retire/Project, isolating the single mutation site and making the system replay-ready by construction.
-- Engineered an enforced zero-hot-path-allocation contract: a 64 KB `std::pmr::monotonic_buffer_resource` frame arena for scratch storage, paired with `RFS_HOTPATH_BEGIN/END` scope guards that override `operator new` in debug builds and trap on any global heap allocation inside the gameplay update path.
-- Captured input events with host-monotonic timestamps and reverse-mapped them through the smoothed clock to song time, with a per-event poll-to-judge latency histogram surfaced in the debug overlay and the results screen.
-- Authored a layered test suite: pure-function unit tests over judgment/score/validator, a `MockAudioBackendClock`-driven smoothed-clock test, a pause/resume-invariant test, and a macro invariant test asserting that simulated perfect inputs produce the theoretical maximum score.
+Two tiers. The first tier describes only what is shipped and verifiable in the repo today; use these as-is. The second tier is for after the §30 backlog lands - phrased as roadmap until then, never as a present-tense claim.
+
+### 32.1 Shipped (use now)
+
+- Built `rhythm-fruit-shop-cpp-core`, a native C++20 rhythm-game core, around a two-layer song-time clock (sample-accurate `IAudioBackendClock` cursor -> `SmoothedSongClock` with host-clock interpolation, reanchor, and pause/freeze), eliminating frame-delta drift instead of integrating `dt`.
+- Inverted the dependency graph between gameplay and platform: `rfs_core` is barred from linking SFML/miniaudio by a CMake configure-time guard, so the rhythm core, judgment system, and chart loader compile and unit-test headlessly with no window or audio device.
+- Modeled judgment as pure decision functions (`JudgeTaps`/`DetectMisses`) that read `const` state and return fixed-capacity command buffers by value, separating "decide" from "commit" and keeping the judgment path allocation-free.
+- Implemented deterministic Q16 fixed-point scoring (integer base x combo multiplier, `int64_t` intermediate, `>> 16`) with no floating-point on the score path.
+- Captured input events with host-monotonic timestamps and reverse-mapped them through the smoothed clock to song time as the single sanctioned input-to-song-time path.
+- Wrote a headless doctest suite (12 cases) over judgment windows/offsets, chart loading/validation, and clock freeze, linking only the core + platform interfaces.
+
+### 32.2 Roadmap (use after the work lands, §30)
+
+- A zero-hot-path-allocation contract (stack-backed `std::pmr` frame arena + debug `operator new` guard that traps on any heap allocation in the update path).
+- Measured update p50/p99 and input-to-judge latency via a frame-metrics ring and latency histogram, surfaced in-overlay - which will also empirically confirm the ~ few-ms timing bound derived in the timing analysis.
+- A headless `GameplaySession` plus a perfect-run invariant test asserting simulated perfect inputs yield the theoretical maximum score, gated in CI.
 
 ## 33. Cover-letter snippet
 
 ```text
-My production background is in Unity/C# game systems. I am moving deliberately
-into native C++ game technology. To make that transition concrete I shipped
-rhythm-fruit-shop-cpp-core, a small but production-shaped native C++ rhythm-game
-core. The project is built around four claims:
+My background is five years of Unity/C# game-client development. I am moving
+deliberately into native C++ and systems-level engineering, and I built
+rhythm-fruit-shop-cpp-core as the first concrete step. It is a small but
+production-shaped native C++ rhythm-game core, and it actually ships:
 
-  - A layered song-time clock pipeline (sample-accurate anchor -> smoothed clock
-    with EMA reanchor -> calibration-aware chart clock), with a measured p99
-    timing error of about one millisecond and a documented evolution path to a
-    callback-driven anchor for higher-Hz scope.
+  - A two-layer song-time clock driven by the audio sample cursor with
+    host-clock interpolation and pause/freeze - no frame-delta drift - with a
+    documented evolution path to a callback-driven anchor for higher-Hz scope.
   - An inverted dependency graph: the rhythm core compiles and unit-tests
     without a window, an audio device, or any platform library, enforced at
     CMake configure time.
-  - Judgment as a pure Read/Decide/Commit pipeline, with the only mutation site
-    isolated and observable - replay-ready by construction.
-  - A contractually-enforced zero-hot-path-allocation budget, audited by an
-    operator-new override in debug builds and documented per memory domain.
+  - Judgment as pure decision functions that return command buffers, separating
+    decide from commit, with deterministic integer (Q16) scoring.
 
-The repository, including a debug-overlay screenshot showing the budget-table
-metrics in motion, is at <repo-url>. I would welcome the chance to walk through
-the timing layer and the memory-contract design in a technical conversation.
+My next milestone for the project - already designed and documented - is an
+enforced zero-hot-path-allocation memory contract and a measured latency/
+frame-time budget, which is the direction I most want to grow in. The
+repository documents exactly what is shipped versus planned. I would welcome
+the chance to walk through the timing layer and the memory-contract design.
 ```
+
+This snippet claims only shipped work in the present tense and frames the memory/latency contract as the next milestone - matching the repository's own tagging.
 
 ## 34. Interview talking points
 
 ### 34.1 "Why C++ and why this scope?"
 
-The scope is built to demonstrate ownership of the four technical axes that distinguish production game code from coursework: timing as a layered pipeline, dependency inversion across the platform boundary, judgment as a pure decision flow, and memory as a contract. Each axis carries enforcement, measurement, and an evolution path. Larger scope would have diluted the proof.
+I am a game programmer moving into native C++ and systems work, and I wanted a small project that proves the fundamentals rather than a broad one that proves none. The scope is built around three things that are shipped and one that is in progress: timing as a layered pipeline, dependency inversion across the platform boundary, judgment as a pure decision flow (all shipped), and memory as an enforced contract (designed, building next). Keeping it small is what let me make each piece real and documented instead of hand-wavy.
 
 ### 34.2 "Why main-thread polling for the audio clock instead of an audio-callback anchor?"
 
-I measured the v1 error budget. WASAPI shared-mode buffer period is ~10 ms; with EMA smoothing the expected song-time error settles to ~4 ms, and measured p99 is <= 1.2 ms - a factor of 25-90 below the Perfect window. Audio-callback anchors plus a lock-free SPSC ring would push that toward ~50 us, which is unobservable to a human player at this scope. Recorded the callback path as a v2 evolution with concrete trigger conditions (240 Hz displays, 8+ lanes, VSRG difficulty) so the system carries the next step inline rather than as an afterthought.
+I worked the error budget. WASAPI shared-mode buffer period is ~10 ms; with smoothing the expected song-time error settles to a few milliseconds - small relative to a 50 ms Perfect window and below the variance of the human input pipeline. Audio-callback anchors plus a lock-free SPSC ring would push that toward tens of microseconds, which is unobservable to a player at four lanes and Tap-only. So I shipped the simpler main-thread design and recorded the callback path as a v2 with explicit triggers (240 Hz, 8+ lanes, VSRG). I am candid in interviews that the empirical p50/p99 confirmation is queued behind the metrics layer I am building - I derived the bound, I have not yet measured it.
 
-### 34.3 "Why command pattern for judgment?"
+### 34.3 "Why the command pattern for judgment?"
 
-To make `Judge` a pure function. That gives me three things at once: unit tests with no runtime fixtures, a single auditable mutation site (the Commit phase), and a free path to deterministic replay later (§38). The naive in-place implementation collapses all three into a coupled mutable state machine.
+To make judgment a pure function. `JudgeTaps` and `DetectMisses` read `const` state and return fixed-capacity buffers; the caller commits them. That buys unit tests with no mutable fixtures, a single auditable mutation site, and a clean path to deterministic replay later. Today that logic lives inside the gameplay screen; the next refactor pulls it into a headless `GameplaySession` so I can drive it frame-by-frame in tests - and I am clear about that being in progress, not done.
 
-### 34.4 "How do you actually verify zero hot-path allocations?"
+### 34.4 "How will you verify zero hot-path allocations?" (in-progress, be honest)
 
-`RFS_HOTPATH_BEGIN/END` brackets each hot-path scope. The debug build links a custom `operator new` that increments a thread-local counter; on `END` the counter is checked against the baseline taken at `BEGIN` and any non-zero delta calls `Logger::Fatal` and `__debugbreak`. PMR allocations into the frame arena bypass the global allocator (the arena is stack-backed), so legitimate per-frame scratch usage is invisible to the guard. Release builds compile the macros to no-ops.
+This is designed but not yet built, and I say so. The plan: bracket the update path with `RFS_HOTPATH_BEGIN/END`; in debug, link an `operator new` that bumps a thread-local counter; on scope exit, a non-zero delta traps. Per-frame scratch comes from a stack-backed `std::pmr` arena that bypasses the global allocator, so legitimate scratch is invisible to the guard. The acceptance signal is 60 s of play with zero counted allocations. It is the top item on my backlog because it is the clearest bridge toward the high-performance work I want to do.
 
-### 34.5 "What would you change in v2?"
+### 34.5 "What's shipped vs what's next?"
 
-The audio-callback anchor pipeline (§37), explicit SoA layout for stress-chart scale, hold/slide note types, a replay recorder backed by the existing command stream (§38), and a property-based fuzzing layer over the chart loader.
+Shipped: the two-layer clock, the build-enforced platform inversion, pure-function judgment, Q16 scoring, song select with 41 charts, and a headless test suite. Next, in order: extract the headless session, add the invariant tests, build the memory contract, add measured metrics, and gate tests in CI. The design doc tags every feature so there's no ambiguity about which is which - I'd rather show that discipline than over-claim.
+
+### 34.6 "What would you defer to a real v2?"
+
+The audio-callback anchor pipeline, explicit SoA layout at stress-chart scale, hold/slide note types, a replay recorder over the command stream, and property-based fuzzing of the chart loader. Each has a recorded trigger condition rather than being a vague "later".
 
 ## 35. Risk register
 
-| Risk | Mitigation | Trigger for fallback |
-|---|---|---|
-| miniaudio integration burns the audio budget | Fall back to `SfmlAudioPlayer` + `getPlayingOffset`; document `audio.backend.degraded`. | > 2 h spent on audio without a playing chart on Day 1. |
-| Hot-path guard catches a legitimate allocation we cannot remove | Allow-list the offending allocation behind `RFS_HOTPATH_PERMIT(reason)` macro with a recorded justification in the README. | Any single allow-list entry. Two or more is a structural problem, not a local fix. |
-| Test build pulls in SFML | CMake guard in §16.3 fires. | Any failure of `rfs_assert_no_forbidden_deps`. |
-| Visual polish takes Day 3 | Demo recording is checked in before any visual polish work. | End of Day 3 hour 4. |
-| Scope creep into engine territory | Out-of-scope list in §2.3 is read aloud (literally) at each end-of-day checkpoint. | Any "while I'm in there" change. |
+| Risk | Mitigation |
+|---|---|
+| Hot-path guard (once built) catches a legitimate allocation that cannot be removed | Allow-list it behind an explicit `RFS_HOTPATH_PERMIT(reason)` macro with a recorded justification; two or more entries signals a structural problem, not a local fix. |
+| Test build accidentally pulls in SFML/miniaudio | The CMake guard in §16.3 fires at configure time. (Active today.) |
+| Audio/imported-chart licensing | Repo states audio + imported chart data are demonstration-only; no redistribution as project-licensed content. |
+| Scope creep into engine territory | The deferred list in §2.3 / §37 is the boundary; "while I'm in there" changes are rejected. |
+| Documentation drift | Each shipped backlog item flips its tag from [Planned] to [Shipped] in the same change; this v3.0 reconciliation is the baseline. |
 
 ## 36. Definition of done
 
-The project ships when **all** of the following hold simultaneously:
+This project is not a fixed-deadline deliverable; it has a **shipped** bar (met today) and a **target** bar (the §30 backlog).
 
-1. CMake build green on Windows MSVC and Linux GCC from a clean checkout.
-2. Demo runs to completion against `assets/charts/demo_fruit_loop_01.json`.
-3. Debug overlay reports p99 update <= 1.0 ms, zero hot-path allocations across a 60 s play, frame arena high water < 32 KB.
-4. `rfs_tests` passes including `TestPerfectRunInvariant`.
-5. README covers architecture, timing pipeline, memory contract, and build instructions.
-6. 30-60 s recording in `docs/demo.gif`.
-7. Resume bullets (§32) and cover-letter snippet (§33) are committed to the engineer's resume document, not just to the repo.
-8. The "v1 vs v2" matrix (§37) is published in the README; nothing the document claims is missing from the binary.
+### 36.1 Shipped bar (met)
+
+1. CMake build green on Windows MSVC from a clean checkout; the dependency guard passes.
+2. Demo runs end-to-end: song select (41 charts) -> play -> result, with pause/resume.
+3. `rfs_tests` (12 headless cases) passes, linking only `rfs_core` + `rfs_platform_iface` + doctest.
+4. The clock pipeline, platform inversion, pure-function judgment, and Q16 scoring are implemented.
+5. This document accurately tags every feature as shipped/planned/v2.
+
+### 36.2 Target bar (the §30 backlog)
+
+1. Headless `GameplaySession` + `MockAudioBackendClock`; `TestPerfectRunInvariant` passes.
+2. Memory contract: zero counted hot-path allocations across 60 s of debug play.
+3. Measured update p50/p99 and input-to-judge latency in the overlay/result screen.
+4. CI builds and runs `rfs_tests` on every push.
+5. `LICENSE`, README (architecture, timing, shipped-vs-planned), and a 30-60 s demo GIF are committed.
 
 ## 37. Threading model and future evolutions
 
-### 37.1 v1 threading model
+### 37.1 Current threading model [Shipped]
 
-- **Main thread** owns: window, input polling, smoothed clock anchor sampling, gameplay update, rendering, frame metrics aggregation.
-- **miniaudio audio thread** is internal to miniaudio. It is **not entered by gameplay code**. Synchronisation with the main thread is read-only, lock-free, via `ma_sound_get_cursor_in_pcm_frames`, which is documented as safe to call from any thread.
-- **No worker threads** in v1.
+- **Main thread** owns: window, input polling, smoothed-clock anchor sampling, gameplay update, and rendering.
+- **miniaudio audio thread** is internal to miniaudio and **not entered by gameplay code**. Synchronisation is read-only via `ma_sound_get_cursor_in_pcm_frames` from the main thread.
+- **Asset loading** on the loading screen is asynchronous (the renderer exposes `LoadTextureAsync`/`PollAsyncLoads`), but it touches no gameplay state and is drained on the main thread.
 
-The result is that v1 has zero gameplay-visible synchronisation primitives. Every concurrency concern that exists is owned by the audio backend.
+The result is that gameplay logic itself has zero synchronisation primitives; the only concurrency lives in the audio backend and the asset loader, both behind interfaces.
 
 ### 37.2 v2 evolution: audio-callback-driven anchors
 
@@ -1777,7 +1659,7 @@ The `IAudioBackendClock` interface is shaped to accommodate a callback path with
 
 - Register a miniaudio data callback (`ma_data_callback_proc`).
 - Inside the callback, sample `(currentSampleIndex, steady_clock::now())` and push into a `SpscRing<SampleAnchor, 16>` (lock-free, single-producer single-consumer).
-- The main thread `MiniaudioBackendClock::SampleNow()` drains the ring and returns the most recent anchor.
+- The main-thread `MiniaudioAudioBackendClock::Current()` drains the ring and returns the most recent anchor (no gameplay-code change, since it already calls `Current()`).
 
 Trigger conditions for adopting this path:
 
@@ -1802,115 +1684,98 @@ A senior engineer is judged not only on what they built but on what they chose n
 
 ## 38. Determinism and replay (design hook)
 
-### 38.1 Replay-ready by construction
+> **Status: [v2] design hook. No replay code exists today** - there is no `ReplayRecord` type, header, or `ReplayFrom` entry point. This section records why the architecture is *amenable* to replay, not a feature that ships.
 
-The Read/Decide/Commit pipeline (§24.2) makes a session deterministic given a fixed input stream and a fixed clock anchor stream. Concretely, the following triple uniquely determines a session outcome:
+### 38.1 Why the architecture is replay-amenable
+
+The decide/commit split (§5.2, §24) means a session is, in principle, deterministic given a fixed input stream and a fixed clock-anchor stream. The triple that would uniquely determine an outcome:
 
 ```text
+// [v2] - not implemented
 ReplayRecord {
-    chart_sha256:  std::array<std::byte, 32>           // hash of FrozenChart bytes
-    rng_seed:      std::uint64_t                       // (currently unused; reserved)
-    inputs:        std::vector<InputEvent>             // the entire poll history
-    anchors:       std::vector<SampleAnchor>           // the entire anchor history
-    config:        RhythmConfig                        // judgment windows, calibration
+    chart_id + difficulty                  // identifies the FrozenChart
+    inputs:  std::vector<InputEvent>       // the entire poll history
+    anchors: std::vector<SampleAnchor>     // the entire anchor history
+    config:  JudgementConfig + song_offset // windows + calibration
 }
 ```
 
-`GameplaySession::ReplayFrom(const ReplayRecord&)` is the planned single entry point.
+### 38.2 What this would require
 
-### 38.2 What is in v1
+- A headless `GameplaySession` (§24) as the deterministic execution target - the prerequisite, and itself [Planned].
+- Recording inputs + anchors in the main loop; a playback driver (`ReplayClock` + a mock input source); and serialization.
 
-- The data shapes above are defined as types; `ReplayRecord` exists as a header.
-- The session does not currently record into a `ReplayRecord` and does not consume one.
+### 38.3 Honest cost
 
-### 38.3 What is out of v1
-
-- Recording in `Application` main loop.
-- Playback driver (`ReplayClock` + `ReplayInputSource` mock implementations).
-- File serialization (binary or JSON).
-
-### 38.4 Estimated v2 cost
-
-About one engineer-day. The work is straightforward because the architecture has already paid the design tax; the v2 task is plumbing only. This is what "replay-ready by construction" means in this document.
+Modest once the headless session exists, because the decide/commit shape removes the hard part. But it is genuinely deferred work, not a header sitting in the repo - which is precisely the kind of over-claim this v3.0 rewrite removes.
 
 ---
 
-# Appendix A - Cursor execution prompt (v2.0)
+# Appendix A - Assistant working prompt (v3.0)
 
-Use this prompt at the top of the chat in the new repository:
-
-```text
-You are assisting on rhythm-fruit-shop-cpp-core, a 48-hour native C++20 portfolio
-sprint. The architectural contract is defined in docs/GDD_TDD.md and is binding;
-do not deviate without first proposing the deviation as a comment in chat.
-
-Hard constraints (invariants I-01 through I-08 in the document):
-
-- rfs_core MUST NOT link, include, or reference SFML, miniaudio, or any OS
-  library. CMake configure-time guard rfs_assert_no_forbidden_deps enforces
-  this; do not weaken it.
-- Song time is authoritative. No code path advances time by frame dt.
-- InputEvent carries a host-monotonic eventHostNs; eventSongTimeMs is derived
-  exclusively via SmoothedSongClock::HostNsToSongTimeMs.
-- JudgmentSystem::Judge is a pure function returning JudgmentCommandBuffer by
-  value. No mutation of inputs.
-- Inside any RFS_HOTPATH_BEGIN/END block, the global heap allocator must observe
-  zero allocations. Per-frame scratch storage uses std::pmr containers backed by
-  the 64KB stack-buffer FramePmrArena.
-- FrozenChart exposes only std::span<const ...>. The runtime store is the only
-  mutable per-session container.
-
-Build the project via CMake with these targets: rfs_core, rfs_platform_iface,
-rfs_platform_sfml, rfs_platform_miniaudio, rfs_app, rfs_demo, rfs_tests.
-
-Implement, in order, the modules referenced in §15 of the document. Each commit
-should land one acceptance gate from §30 and update the README if behaviour
-visible to a reviewer changes.
-
-Do not introduce engine-like features (asset hot-reload, ECS framework, custom
-allocator hierarchy, scripting). Do not add particle systems, post-processing,
-or visual polish before §30 Day 3 task 3.4 (demo recording) has shipped.
-
-When in doubt, re-read the relevant section of docs/GDD_TDD.md aloud and quote
-the line that justifies your decision.
-```
-
-# Appendix B - Acceptance gates checklist
-
-These are not check-the-box "I did the thing" items; each is binary-observable.
+Use this prompt when continuing the project (e.g. working the §30 backlog). It encodes the constraints that are real today plus the honesty rule.
 
 ```text
-GATE-01  CMake configure on a clean machine; no SFML in rfs_core link line.
-GATE-02  rfs_tests builds and passes on a CI runner without audio device or display.
-GATE-03  rfs_demo opens a window, plays the demo audio, renders four lanes.
-GATE-04  Notes spawn at songTimeMs >= targetTimeMs - approachTimeMs (verified by overlay).
-GATE-05  Lane inputs produce Perfect/Great/Good/Miss commands per §6.5 windows.
-GATE-06  ScoreSystem totals match the macro invariant test under simulated perfect inputs.
-GATE-07  Pause/resume continues song time from the freeze point; hard reanchor count == 1.
-GATE-08  Restart resets all runtime arrays; no stale state visible in overlay.
-GATE-09  Debug overlay shows p50/p99 update, p50/p99 render, frame arena HWM,
-         hard reanchor count, last judgment delta.
-GATE-10  RFS_HOTPATH_BEGIN/END observes zero hot-path allocations across 60 s of play.
-GATE-11  README contains: architecture mermaid, timing pipeline (with §18.8 numerical
-         justification), memory-contract table (§26.5), build instructions.
-GATE-12  docs/demo.gif (or .mp4) exists, between 30 s and 60 s.
-GATE-13  Resume bullets (§32) committed to the engineer's resume PDF, not just repo.
-GATE-14  v1-vs-v2 matrix (§37.3) published in README; every v1 row has a binary observable.
+You are assisting on rhythm-fruit-shop-cpp-core, a native C++20 rhythm-game core.
+The design contract is in this GDD/TDD and is binding. Every feature is tagged
+[Shipped] / [Planned] / [v2]; respect those tags and never describe planned work
+as if it exists.
+
+Shipped invariants (do not regress):
+- rfs_core does NOT link/include SFML, miniaudio, or any OS library. The CMake
+  guard rfs_assert_no_forbidden_deps enforces this; do not weaken it.
+- Song time comes from the audio clock, never from frame dt (the lead-in
+  countdown is the only dt use and never feeds judgment).
+- InputEvent carries event_host_ns; event_song_time_ms is derived only via
+  SmoothedSongClock::HostNsToSongTimeMs.
+- JudgeTaps / DetectMisses are const and return command buffers by value.
+- FrozenChart exposes only std::span<const ...>.
+
+When implementing a [Planned] item from §30, flip its tag to [Shipped] in this
+document in the same change, and update the README if reviewer-visible behaviour
+changes. Do not introduce engine-like features (ECS framework, scripting,
+asset hot-reload) or claim a metric you have not measured.
 ```
 
-# Appendix C - Reviewer checklist (the actual quality bar)
+# Appendix B - Acceptance gates
 
-A senior engineer reviewing the repository in 30 minutes should be able to make all five statements without hedging:
+Shipped gates pass today; planned gates are the acceptance signals for §30.
 
-1. *"The dependency graph is correct."* (Verified by inspecting `cmake/DependencyGuards.cmake` and the link lines in each `CMakeLists.txt`.)
-2. *"The clock model is the right shape for a rhythm game."* (Verified by §18 and the `TestSmoothedSongClock` + `TestPauseInvariant` tests.)
-3. *"The judgment pipeline is a pure decision function with a single mutation site."* (Verified by reading `GameplaySession::Update` and the signature of `JudgmentSystem::Judge`.)
-4. *"The memory contract is enforced, not aspirational."* (Verified by running the debug build and inspecting the overlay's hot-path allocation counter and frame arena high-water mark.)
-5. *"The candidate knows the difference between v1 scope and v2 evolution and has documented both."* (Verified by §37 and the README's v1-vs-v2 matrix.)
+```text
+[Shipped]
+GATE-01  CMake configures clean; rfs_core link line contains no SFML/miniaudio.
+GATE-02  rfs_tests builds and runs headlessly (no window, no audio device).
+GATE-03  rfs_demo runs song-select -> play -> result, with pause/resume.
+GATE-05  Lane inputs produce Perfect/Great/Good/Miss per the 50/100/150 windows.
+GATE-07  Pause/resume continues song time from the freeze point.
 
-If any of these statements requires hedging, the project has not met its bar and an engineer-time fix is owed before the application goes out.
+[Planned] (map to §30 priorities)
+GATE-06  Perfect-run invariant test: simulated perfect inputs == theoretical max score.
+GATE-09  Overlay shows update p50/p99, frame-arena HWM, reanchor delta, last delta.
+GATE-10  RFS_HOTPATH guard observes zero hot-path allocations across 60 s of play.
+GATE-11  CI builds and runs rfs_tests on every push.
+GATE-12  LICENSE + README (shipped-vs-planned) + 30-60 s demo media committed.
+```
+
+# Appendix C - Reviewer checklist
+
+In ~30 minutes a reviewer should be able to confirm what is real and locate what is planned:
+
+1. *"The dependency graph is correct."* - [Shipped] Inspect `CMakeLists.txt` link lines + `rfs_assert_no_forbidden_deps`.
+2. *"The clock model is the right shape for a rhythm game."* - [Shipped] §18 + `TestSmoothedSongClock`.
+3. *"Judgment is a pure decision function."* - [Shipped] `const` `JudgeTaps`/`DetectMisses` returning buffers by value.
+4. *"Scoring is deterministic."* - [Shipped] Q16 path in `GameRules.h`, no float.
+5. *"The candidate is honest about scope."* - [Shipped] Every claim is tagged; the memory/latency contracts are clearly marked [Planned] with acceptance signals, not over-claimed.
+
+The bar this document sets for itself is not "everything is built" - it is "nothing is misrepresented".
 
 ---
+
+## Document changelog
+
+- **v3.0 (2026-06-05)** - Reconciled the entire document line-by-line with the shipped code. Introduced the [Shipped]/[Planned]/[v2] tagging system. Re-anchored positioning to a game programmer growing into native C++/systems work (removed senior-title and 48-hour-sprint framing). Corrected drift: two-layer clock (L2 ChartClock -> [v2]); single `song_offset_ms` (dual calibration -> [v2]); judgment windows 50/100/150 and removal of the spurious `miss_window_ms`; real `NoteDef`/`FrozenChart`/`JudgeCommand`/`IRenderer`/`InputAction` shapes; `UIManager` screen flow; actual controls; accuracy weights; real `ChartLoader` signature; actual 12-case test suite. Reframed memory contracts, diagnostics, headless `GameplaySession`, `ScoreSystem`/`ChartValidator`/`NoteTimeline`, and replay as [Planned]/[v2] with acceptance signals. Replaced the sprint plan with a committed wrap-up backlog (§30). Rewrote resume/cover-letter/interview material to claim only shipped work. Promoted multi-chart song select from "out of scope" to a delivered feature. Softened the timing "measured p99" claim to a derived bound pending the metrics layer.
+- **v2.0** - Production-grade rewrite (aspirational architecture; superseded by v3.0's reconciliation with code).
+- **v1.0** - Initial design.
 
 *End of document.*
 

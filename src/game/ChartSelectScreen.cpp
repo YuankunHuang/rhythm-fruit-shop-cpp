@@ -165,10 +165,13 @@ namespace rfs {
 				Anchor::Center, TextStyle::Body,
 				"No songs found. Run 03_import_for_cpp.bat to import songs.",
 				GameColors::kTextGray });
-			ctx_.renderer.SubmitText({
-				cx, ui.content_bottom,
-				Anchor::BottomCenter, TextStyle::Caption,
-				"ESC  Main Menu", GameColors::kTextGray });
+			{
+				const float key_gap = ui.Px(8.f);
+				const float w_back = UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption, "ESC", "Main Menu", key_gap);
+				UiDraw::KeyHint(ctx_.renderer, cx - w_back * 0.5f, ui.content_bottom, TextStyle::Caption,
+					"ESC", "Main Menu", GameColors::kSelectAccent, GameColors::kTextGray,
+					GameColors::kOutlineBlack, key_gap);
+			}
 			return;
 		}
 
@@ -309,12 +312,35 @@ namespace rfs {
 			}
 		}
 
-		// Hint bar
-		ctx_.renderer.SubmitText({
-			cx, ui.content_bottom,
-			Anchor::BottomCenter, TextStyle::Caption,
-			"ENTER Play       Up/Down Song       Left/Right Difficulty       ESC Back",
-			GameColors::kTextGray, GameColors::kOutlineBlack });
+		// Hint bar: row of key-hints centered along the bottom
+		{
+			struct Hint { const char* key; const char* label; };
+			static const Hint kHints[] = {
+				{ "ENTER", "Play" },
+				{ "UP/DOWN", "Song" },
+				{ "LEFT/RIGHT", "Difficulty" },
+				{ "ESC", "Back" },
+			};
+			const float key_gap = ui.Px(8.f);
+			const float hint_sep = ui.font_body * 1.0f;
+			const float hint_y = ui.content_bottom - ui.font_caption * 0.5f;
+
+			float total = 0.f;
+			for (std::size_t i = 0; i < std::size(kHints); ++i) {
+				total += UiDraw::MeasureKeyHint(ctx_.renderer, TextStyle::Caption,
+					kHints[i].key, kHints[i].label, key_gap);
+				if (i + 1 < std::size(kHints)) total += hint_sep;
+			}
+
+			float x = cx - total * 0.5f;
+			for (std::size_t i = 0; i < std::size(kHints); ++i) {
+				x += UiDraw::KeyHint(ctx_.renderer, x, hint_y, TextStyle::Caption,
+					kHints[i].key, kHints[i].label,
+					GameColors::kSelectAccent, GameColors::kTextGray,
+					GameColors::kOutlineBlack, key_gap);
+				x += hint_sep;
+			}
+		}
 	}
 
 	void ChartSelectScreen::HandleInput(const InputEvent& evt) {

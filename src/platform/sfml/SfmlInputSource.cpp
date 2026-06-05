@@ -19,7 +19,6 @@ namespace {
 		case sf::Keyboard::Escape: return InputAction::Escape;
 		case sf::Keyboard::Enter: return InputAction::Enter;
 		case sf::Keyboard::F1: return InputAction::ToggleDebug;
-		case sf::Keyboard::F2: return InputAction::CycleCalibration;
 		case sf::Keyboard::Up: return InputAction::NavUp;
 		case sf::Keyboard::Down: return InputAction::NavDown;
 		case sf::Keyboard::Left: return InputAction::NavLeft;
