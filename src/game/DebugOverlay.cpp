@@ -50,7 +50,7 @@ namespace rfs {
 		const int song_ms_i = static_cast<int>(std::lround(song_time_ms));
 		draw("song: " + std::to_string(song_ms_i) + " ms");
 
-		draw("offset: " + std::to_string(session.input_offset_ms) + " ms [F2]");
+		draw("offset: " + std::to_string(session.song_offset_ms) + " ms [F2]");
 
 		const char* sign = session.last_judge_delta_ms >= 0 ? "+" : "";
 		draw("last delta: " + std::string(sign) + std::to_string(session.last_judge_delta_ms) + " ms");

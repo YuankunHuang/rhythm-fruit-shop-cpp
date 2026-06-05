@@ -88,5 +88,6 @@ namespace rfs {
 		GameResult BuildResult() const;
 
 		GameplaySnapshot snapshot_;
+		JudgementSystem judge_{};
 	};
 }

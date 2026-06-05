@@ -147,11 +147,12 @@ namespace rfs {
 	}
 
 	void GameplayScreen::Update(const FrameContext& ctx) {
+		// -- Context ----------------------------------------------------
 		layout_ = GameLayout::Compute(ctx.win_w, ctx.win_h, LaneCount());
 		ctx_.session.last_frame_duration_ms = ctx.delta_time * 1000.f;
-
 		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
 
+		// -- Load Cover -------------------------------------------------
 		if (retry_cooldown_ > 0.f) {
 			retry_cooldown_ -= ctx.delta_time * 1000.f;
 		}
@@ -200,17 +201,32 @@ namespace rfs {
 			ctx_.audio.SetVolume(audio_volume_);
 		}
 
-		// Advance next_idx_: mark overdue notes as Miss
-		const auto& cmds = JudgementSystem::AdvanceAutoMisses(chart_, snapshot_, std::max(song_time_ms_, progress_time_ms_));
-		for (const auto& cmd : cmds) {
+		// -- Judgement --------------------------------------------
+		// 1. Decide
+		const std::int32_t judge_time_ms = static_cast<std::int32_t>(std::lround(song_time_ms_));
+		const auto misses = judge_.DetectMisses(chart_, snapshot_.note_resolved, snapshot_.next_idx, judge_time_ms, ctx_.session.song_offset_ms);
+		// 2. Commit
+		for (const auto& cmd : misses.Span()) {
+			snapshot_.note_resolved[cmd.note_index] = 1;
 			ApplyCommand(cmd);
 		}
 
+		// skip over passed notes
+		const int note_count = static_cast<int>(chart_.Notes().size());
+		const auto& notes = chart_.Notes();
+		while (snapshot_.next_idx < note_count) {
+			const std::int32_t effective = notes[snapshot_.next_idx].time_ms + ctx_.session.song_offset_ms;
+			if (judge_time_ms - effective <= JudgeWindows::kGood) {
+				break;
+			}
+			++snapshot_.next_idx;
+		}
+		
+		// 3. Render
 		if (judge_display_ms_ > 0.f) {
 			judge_display_ms_ -= ctx.delta_time * 1000.f;
 		}
 
-		const int note_count = static_cast<int>(chart_.Notes().size());
 		if (!result_pushed_
 			&& progress_time_ms_ >= chart_end_ms_
 			&& snapshot_.next_idx >= note_count)
@@ -274,7 +290,7 @@ namespace rfs {
 		for (int i = snapshot_.next_idx; i < static_cast<int>(notes.size()); ++i) {
 			if (snapshot_.note_resolved[i]) continue;
 			const auto& note = notes[i];
-			float t = static_cast<float>(note.time_ms) - song_time_ms_;
+			float t = static_cast<float>(note.time_ms + ctx_.session.song_offset_ms) - song_time_ms_;
 			float norm = t / approach;
 			if (norm < -0.15f || norm > 1.1f) continue;
 
@@ -378,9 +394,9 @@ namespace rfs {
 			static int i = 0;
 			const auto& kSteps = GameConfig::kCalibrationSteps;
 			for (; i < std::size(kSteps); ++i) {
-				if (kSteps[i] == ctx_.session.input_offset_ms) break;
+				if (kSteps[i] == ctx_.session.song_offset_ms) break;
 			}
-			ctx_.session.input_offset_ms = kSteps[(i + 1) % std::size(kSteps)];
+			ctx_.session.song_offset_ms = kSteps[(i + 1) % std::size(kSteps)];
 			return;
 		}
 
@@ -395,14 +411,18 @@ namespace rfs {
 		}
 
 		// Find nearest unhit note in this lane within Good window
-		const int32_t base_input_ms = evt.event_song_time_ms != 0
+		const int32_t input_ms = evt.event_song_time_ms != 0
 			? evt.event_song_time_ms
 			: static_cast<int32_t>(song_time_ms_);
-		const int32_t input_ms = base_input_ms + ctx_.session.input_offset_ms;
 
-		if (auto cmd = JudgementSystem::JudgeLanePress(chart_, snapshot_, lane, input_ms)) {
-			ctx_.session.last_judge_delta_ms = input_ms - chart_.Notes()[cmd->note_index].time_ms;
-			ApplyCommand(*cmd);
+		// -- Judgement ---------------------------------------
+		// 1. Decide
+		const auto taps = judge_.JudgeTaps(chart_, snapshot_.note_resolved, snapshot_.next_idx, lane, input_ms, ctx_.session.song_offset_ms);
+		// 2. Commit
+		for (const auto& cmd : taps.Span()) {
+			ctx_.session.last_judge_delta_ms = input_ms - (chart_.Notes()[cmd.note_index].time_ms + ctx_.session.song_offset_ms);
+			snapshot_.note_resolved[cmd.note_index] = 1;
+			ApplyCommand(cmd);
 		}
 	}
 

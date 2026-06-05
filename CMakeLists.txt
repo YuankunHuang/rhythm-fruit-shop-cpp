@@ -111,10 +111,11 @@ target_compile_definitions(rfs_tests
     PRIVATE RFS_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
 )
 include(doctest)
+enable_testing()
 doctest_discover_tests(rfs_tests
 	PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+	DISCOVERY_MODE POST_BUILD
 )
-enable_testing()
 
 # DEPENDENCY GUARDS
 include(cmake/DependencyGuards.cmake)
