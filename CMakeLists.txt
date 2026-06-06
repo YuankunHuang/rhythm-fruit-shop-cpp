@@ -18,6 +18,9 @@ add_library(rfs_core STATIC
 	src/rhythm/AudioPathResolver.cpp
 	src/rhythm/SongDisplay.cpp
 	src/rhythm/JudgementSystem.cpp
+	src/rhythm/ScoreSystem.cpp
+	src/rhythm/RuntimeStore.cpp
+	"src/rhythm/GameplaySession.cpp"
 )
 target_include_directories(rfs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rfs_core 
@@ -100,6 +103,8 @@ add_executable(rfs_tests
 	tests/TestChartLoader.cpp
 	tests/TestSmoothedSongClock.cpp
 	tests/TestJudgementSystem.cpp
+	tests/TestScoreSystem.cpp
+	tests/TestGameplaySession.cpp
 )
 set_target_properties(rfs_tests PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"

@@ -13,7 +13,7 @@ namespace rfs {
 
 	class LoadingScreen : public IScreen {
 	public:
-		LoadingScreen(GameContext ctx, std::string chart_path, std::string difficulty, std::string audio_path, std::string cover_path);
+		LoadingScreen(const GameContext& ctx, std::string chart_path, std::string difficulty, std::string audio_path, std::string cover_path);
 
 		bool IsReady() const noexcept override { return ready_; }
 		void OnEnter() override;

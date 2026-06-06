@@ -20,7 +20,7 @@ namespace rfs {
 
 	}
 
-	ResultScreen::ResultScreen(GameContext ctx, GameResult result, std::string cover_path)
+	ResultScreen::ResultScreen(const GameContext& ctx, GameResult result, std::string cover_path)
 		: ctx_(ctx), result_(result), cover_path_(std::move(cover_path)) {
 	}
 

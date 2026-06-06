@@ -5,7 +5,7 @@ namespace rfs {
 	TapCommandBuffer JudgementSystem::JudgeTaps(
 		const FrozenChart& chart,
 		std::span<const std::uint8_t> note_resolved,
-		int next_idx,
+		std::size_t next_idx,
 		int lane,
 		std::int32_t input_song_time_ms,
 		std::int32_t song_offset_ms
@@ -17,7 +17,7 @@ namespace rfs {
 		std::int32_t best_dt = config_.good_window_ms + 1;
 
 		const auto& notes = chart.Notes();
-		for (int i = next_idx; i < static_cast<int>(notes.size()); ++i) {
+		for (auto i = next_idx; i < notes.size(); ++i) {
 			if (note_resolved[i]) continue;
 			if (notes[i].lane != static_cast<uint8_t>(lane)) continue;
 
@@ -29,7 +29,7 @@ namespace rfs {
 			}
 			if (dt < best_dt) {
 				best_dt = dt;
-				best_idx = i;
+				best_idx = static_cast<int>(i);
 			}
 		}
 
@@ -41,7 +41,7 @@ namespace rfs {
 			best_dt <= config_.great_window_ms ? JudgeResult::Great :
 			JudgeResult::Good;
 		buffer.Push(JudgeCommand{
-			best_idx, r, JudgeCommand::Kind::TapHit
+			static_cast<std::size_t>(best_idx), r, JudgeCommand::Kind::TapHit
 			});
 		return buffer;
 	}
@@ -49,7 +49,7 @@ namespace rfs {
 	MissCommandBuffer JudgementSystem::DetectMisses(
 		const FrozenChart& chart,
 		std::span<const std::uint8_t> note_resolved,
-		int next_idx,
+		std::size_t next_idx,
 		std::int32_t song_time_ms,
 		std::int32_t song_offset_ms) const {
 
@@ -58,7 +58,7 @@ namespace rfs {
 		const auto& notes = chart.Notes();
 
 		// deal with all notes that have passed the "dead-line"
-		while (next_idx < static_cast<int>(notes.size()) &&
+		while (next_idx < notes.size() &&
 			song_time_ms - (notes[next_idx].time_ms + song_offset_ms) > config_.good_window_ms) {
 			if (!note_resolved[next_idx]) {
 				buffer.Push(JudgeCommand{ next_idx, JudgeResult::Miss, JudgeCommand::Kind::AutoMiss });

@@ -3,13 +3,13 @@
 #include "../app/IScreen.h"
 #include "GameContext.h"
 #include "GameConfig.h"
-#include "GameResult.h"
+#include "../rhythm/GameResult.h"
 #include <string>
 
 namespace rfs {
 	class ResultScreen : public IScreen {
 	public:
-		ResultScreen(GameContext ctx, GameResult result, std::string cover_path);
+		ResultScreen(const GameContext& ctx, GameResult result, std::string cover_path);
 
 		void OnEnter() override;
 		void Update(const FrameContext& ctx) override;

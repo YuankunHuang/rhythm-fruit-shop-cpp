@@ -3,12 +3,11 @@
 #include "../app/IScreen.h"
 #include "../app/FrameContext.h"
 #include "../rhythm/FrozenChart.h"
-#include "../rhythm/JudgementSystem.h"
+#include "../rhythm/GameplaySession.h"
+#include "../rhythm/JudgeCommand.h"
 #include "GameContext.h"
 #include "GameLayout.h"
 #include "GameConfig.h"
-#include "GameResult.h"
-#include "GameRules.h"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -17,7 +16,7 @@ namespace rfs {
 
 	class GameplayScreen : public IScreen {
 	public:
-		GameplayScreen(GameContext ctx, FrozenChart chart, std::string cover_path);
+		explicit GameplayScreen(const GameContext& ctx, FrozenChart chart, std::string cover_path);
 
 		void OnEnter() override;
 		void OnPause() override;
@@ -29,8 +28,6 @@ namespace rfs {
 		void HandleInput(const InputEvent& evt) override;
 
 	private:
-
-		// Hit fx
 		struct HitSpark {
 			float cx = 0.f;
 			float cy = 0.f;
@@ -39,16 +36,15 @@ namespace rfs {
 			int lane = 0;
 		};
 		std::vector<HitSpark> hit_sparks_;
-		int last_spark_idx_ = -1;
 		void SpawnHitFx(int lane, JudgeResult result);
 		void UpdateHitFx(float delta_sec);
 		void RenderHitFx();
+		void ApplyPresentation(const JudgeCommand& cmd);
 
 		uint8_t LaneCount() const { return GameConfig::kLaneCount; }
-		void ApplyCommand(const JudgeCommand& cmd);
+		void TryLoadCover();
 
 		GameContext ctx_;
-		FrozenChart chart_;
 		std::string cover_path_;
 		int cover_handle_ = -1;
 		float retry_cooldown_ = 0.f;
@@ -56,38 +52,18 @@ namespace rfs {
 		GameLayout  layout_{};
 		GameConfig::UiLayout ui_{};
 
-		void TryLoadCover();
-
-		float chart_end_ms_ = 1.f;
-		float gameplay_end_ms_ = 0.f;
 		float progress_time_ms_ = 0.f;
 		bool  is_in_outro_ = false;
 		float audio_volume_ = 1.f;
 		bool  result_pushed_ = false;
 
-		// judgement display
 		JudgeResult last_judge_{};
 		float judge_display_ms_ = 0.f;
 
-		// scoring
-		int score_ = 0;
-		int combo_ = 0;
-		int max_combo_ = 0;
-		int cnt_perfect_ = 0;
-		int cnt_great_ = 0;
-		int cnt_good_ = 0;
-		int cnt_miss_ = 0;
-
-		// pause
 		bool paused_ = false;
-
-		// lead in
 		bool is_in_lead_in_ = false;
 		float lead_in_ms_ = 0.f;
 
-		GameResult BuildResult() const;
-
-		GameplaySnapshot snapshot_;
-		JudgementSystem judge_{};
+		GameplaySession session_;
 	};
 }

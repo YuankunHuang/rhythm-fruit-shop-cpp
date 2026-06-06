@@ -21,7 +21,8 @@ namespace rfs {
 		IAudioBackendClock& backend_clock, SmoothedSongClock& song_clock,
 		IAudioPlayer& audio, IAudioPlayer& bgm, PlaySessionConfig& session) :
 		window_(window), input_(input), renderer_(renderer),
-		backend_clock_(backend_clock), song_clock_(song_clock), audio_(audio), bgm_(bgm), session_(session) { }
+		backend_clock_(backend_clock), song_clock_(song_clock), audio_(audio), bgm_(bgm), session_(session) {
+	}
 
 	bool Application::Run() {
 		UIManager ui{};
@@ -52,7 +53,7 @@ namespace rfs {
 			if (ui.IsEmpty()) break;
 
 			FrameContext frame{
-				.delta_time   = delta_sec,
+				.delta_time = delta_sec,
 				.song_time_ms = song_clock_.NowMs(host_now_ns),
 				.win_w = window_.Width(),
 				.win_h = window_.Height(),
@@ -60,17 +61,18 @@ namespace rfs {
 
 			ui.Top().Update(frame);
 
-		renderer_.SetWindowSize(frame.win_w, frame.win_h);
-		renderer_.PollAsyncLoads();
-		renderer_.BeginFrame();
-		renderer_.Clear(0x1E, 0x1E, 0x28);
+			renderer_.SetWindowSize(frame.win_w, frame.win_h);
+			renderer_.PollAsyncLoads();
+			renderer_.BeginFrame();
+			renderer_.Clear(0x1E, 0x1E, 0x28);
 
 			const auto& screens = ui.Screens();
 			int render_from = static_cast<int>(screens.size()) - 1;
 			while (render_from > 0) {
 				if (screens[render_from]->IsOverlay()) {
 					--render_from;
-				} else {
+				}
+				else {
 					break;
 				}
 			}

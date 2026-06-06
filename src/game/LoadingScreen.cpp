@@ -34,14 +34,14 @@ namespace rfs {
 	}
 
 	LoadingScreen::LoadingScreen(
-		GameContext ctx,
+		const GameContext& ctx,
 		std::string chart_path,
 		std::string difficulty,
 		std::string audio_path,
 		std::string cover_path)
 		: ctx_(ctx)
 		, audio_path_(std::move(audio_path))
-		, chart_path_(chart_path)
+		, chart_path_(std::move(chart_path))
 		, cover_path_(GameConfig::ResolveCoverPath(std::move(cover_path)))
 	{
 		future_ = std::async(std::launch::async, DoLoad, std::move(chart_path), std::move(difficulty));

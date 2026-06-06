@@ -8,7 +8,7 @@
 namespace rfs {
 	class PauseScreen : public IScreen {
 	public:
-		explicit PauseScreen(GameContext& ctx);
+		explicit PauseScreen(const GameContext& ctx);
 
 		bool IsOverlay() const noexcept override { return true; }
 

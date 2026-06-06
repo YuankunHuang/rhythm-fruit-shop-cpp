@@ -8,7 +8,7 @@
 namespace rfs {
 	class MainMenuScreen : public IScreen {
 	public:
-		explicit MainMenuScreen(GameContext ctx);
+		explicit MainMenuScreen(const GameContext& ctx);
 
 		void OnEnter() override;
 		void OnResume() override;
