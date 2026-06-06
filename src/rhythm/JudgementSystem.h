@@ -15,11 +15,6 @@ namespace rfs {
 		std::int32_t good_window_ms = 150;
 	};
 
-	struct GameplaySnapshot {
-		int next_idx = 0;
-		std::vector<std::uint8_t> note_resolved; // 0: unresolved, 1: resolved
-	};
-
 	class JudgementSystem {
 	public:
 		explicit JudgementSystem(JudgementConfig config = {}) noexcept : config_(config) {}
@@ -29,7 +24,7 @@ namespace rfs {
 		TapCommandBuffer JudgeTaps(
 			const FrozenChart& chart,
 			std::span<const std::uint8_t> note_resolved,
-			int next_idx,
+			std::size_t next_idx,
 			int lane,
 			std::int32_t song_time_ms,
 			std::int32_t song_offset_ms = 0) const;
@@ -37,7 +32,7 @@ namespace rfs {
 		MissCommandBuffer DetectMisses(
 			const FrozenChart& chart,
 			std::span<const std::uint8_t> note_resolved,
-			int next_idx,
+			std::size_t next_idx,
 			std::int32_t song_time_ms,
 			std::int32_t song_offset_ms = 0) const;
 

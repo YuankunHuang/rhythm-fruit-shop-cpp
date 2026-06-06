@@ -23,7 +23,7 @@ namespace rfs {
 
 	}
 
-	ChartSelectScreen::ChartSelectScreen(GameContext ctx) : ctx_(ctx) {
+	ChartSelectScreen::ChartSelectScreen(const GameContext& ctx) : ctx_(ctx) {
 		std::string err;
 		catalog_ = ChartCatalog::Load("assets/charts/catalog.json", err);
 		if (!catalog_.IsValid()) {

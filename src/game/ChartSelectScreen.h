@@ -9,7 +9,7 @@ namespace rfs {
 
 	class ChartSelectScreen : public IScreen {
 	public:
-		explicit ChartSelectScreen(GameContext ctx);
+		explicit ChartSelectScreen(const GameContext& ctx);
 
 		void OnEnter() override;
 		void OnResume() override;

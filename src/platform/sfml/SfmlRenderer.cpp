@@ -59,9 +59,9 @@ struct SfmlRenderer::Impl {
 	sf::RenderWindow* target;
 	sf::Font          font;
 	sf::Text          text;
-	float             win_w   = 1280.f;
-	float             win_h   = 720.f;
-	float             scale_  = 1.f;
+	float             win_w = 1280.f;
+	float             win_h = 720.f;
+	float             scale_ = 1.f;
 	std::unordered_map<std::string, int> texture_index_;
 	std::vector<sf::Texture> textures_;
 	std::vector<bool>        texture_ready_;
@@ -88,8 +88,8 @@ SfmlRenderer::SfmlRenderer(SfmlWindow& window)
 SfmlRenderer::~SfmlRenderer() = default;
 
 void SfmlRenderer::SetWindowSize(float win_w, float win_h) {
-	pimpl_->win_w  = win_w;
-	pimpl_->win_h  = win_h;
+	pimpl_->win_w = win_w;
+	pimpl_->win_h = win_h;
 	const float sx = win_w / UiFontConfig::kRefWidth;
 	const float sy = win_h / UiFontConfig::kRefHeight;
 	pimpl_->scale_ = std::min(sx, sy);
@@ -184,7 +184,7 @@ int SfmlRenderer::LoadTextureAsync(const std::string& path) {
 		sf::Image img;
 		img.loadFromFile(path);
 		return img;
-	});
+		});
 	pimpl_->pending_loads_.push_back({ handle, std::move(future) });
 	return handle;
 }
@@ -199,7 +199,8 @@ void SfmlRenderer::PollAsyncLoads() {
 			}
 			pimpl_->texture_ready_[it->handle] = true;
 			it = pending.erase(it);
-		} else {
+		}
+		else {
 			++it;
 		}
 	}

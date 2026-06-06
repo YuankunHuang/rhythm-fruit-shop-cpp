@@ -25,7 +25,7 @@ namespace rfs {
 		IRenderer& renderer,
 		const GameConfig::UiLayout& ui,
 		const PlaySessionConfig& session,
-		const GameplaySnapshot& snapshot,
+		std::size_t next_idx,
 		float song_time_ms,
 		int note_total)
 	{
@@ -55,7 +55,7 @@ namespace rfs {
 		const char* sign = session.last_judge_delta_ms >= 0 ? "+" : "";
 		draw("last delta: " + std::string(sign) + std::to_string(session.last_judge_delta_ms) + " ms");
 
-		draw("idx: " + std::to_string(snapshot.next_idx) + " / " + std::to_string(note_total));
+		draw("idx: " + std::to_string(next_idx) + " / " + std::to_string(note_total));
 
 		if (session.last_frame_duration_ms > 0.f) {
 			const int fps = static_cast<int>(std::lround(1000.f / session.last_frame_duration_ms));

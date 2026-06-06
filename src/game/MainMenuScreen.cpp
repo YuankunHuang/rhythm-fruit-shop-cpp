@@ -6,7 +6,7 @@
 
 namespace rfs {
 
-	MainMenuScreen::MainMenuScreen(GameContext ctx) : ctx_(ctx) {}
+	MainMenuScreen::MainMenuScreen(const GameContext& ctx) : ctx_(ctx) {}
 
 	void MainMenuScreen::OnEnter() {
 		StartBgm();

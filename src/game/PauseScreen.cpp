@@ -76,7 +76,7 @@ namespace rfs {
 		}
 	}
 
-	PauseScreen::PauseScreen(GameContext& ctx) : ctx_(ctx) {}
+	PauseScreen::PauseScreen(const GameContext& ctx) : ctx_(ctx) {}
 
 	void PauseScreen::OnEnter() {
 		const HostNanos host_now = SteadyNowNs();
