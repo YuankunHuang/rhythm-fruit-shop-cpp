@@ -18,7 +18,7 @@ namespace rfs {
 		score_.Apply(cmd);
 	}
 
-	std::optional<TapCommandBuffer> GameplaySession::HandleLanePress(int lane, std::int32_t input_ms) {
+	std::optional<TapCommandBuffer> GameplaySession::HandleLaneTap(int lane, std::int32_t input_ms) {
 		const auto taps = judge_.JudgeTaps(
 			chart_, store_.NoteResolved(), store_.NextIdx(),
 			lane, input_ms, config_.song_offset_ms);

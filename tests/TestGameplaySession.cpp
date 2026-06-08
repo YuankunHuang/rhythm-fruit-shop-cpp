@@ -16,7 +16,7 @@ TEST_CASE("GameplaySession smoke - tap + update") {
 	auto chart = LoadEasyFixture();
 	rfs::GameplaySession session{ std::move(chart) };
 
-	const auto taps = session.HandleLanePress(0, 1050);
+	const auto taps = session.HandleLaneTap(0, 1050);
 	REQUIRE(taps.has_value());
 	CHECK(taps->count == 1);
 	CHECK(session.Score().Combo() == 1);

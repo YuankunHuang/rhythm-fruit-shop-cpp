@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstddef>
 #include "../platform/UiFontConfig.h"
 #include <string>
 
@@ -36,10 +37,21 @@ namespace GameConfig {
 
 	// Gameplay
 	constexpr uint8_t kLaneCount = 4;
-	constexpr float kGameplayLeadInMs = 1600.f;
+	constexpr float kGameplayLeadInMs = 2500.f;
+	constexpr float kPauseResumeCountdownMs = 3000.f;
 	constexpr float kJudgeDisplayMs = 500.f;
 	constexpr float kSongEndDelayMs = 2000.f;
-	constexpr float kSparkLifetime = 1200.f;
+
+	// Hit FX (Tap feedback)
+	constexpr std::size_t kHitBurstMaxSlots = 16;   // pool capacity; practically unreachable
+	constexpr float kHitBurstLifetimeMs = 420.f;    // pool eviction threshold (longest layer + margin)
+	constexpr float kLaneFlashMs = 100.f;           // vertical lane flash
+	constexpr float kNotePopMs = 220.f;             // note-colored burst quad
+	constexpr float kHitCoreMs = 90.f;              // bright core highlight
+	constexpr float kHitRingMs = 320.f;             // expanding square ring
+	constexpr float kHitSpokeMs = 260.f;            // radial spokes
+	constexpr float kHitSweepMs = 280.f;            // judge-line horizontal sweep
+	constexpr float kJudgePulseMs = 360.f;          // per-lane judge-line pulse
 
 	// Layout
 	constexpr float kFieldWidthFrac = 0.50f;

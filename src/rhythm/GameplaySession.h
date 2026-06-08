@@ -20,7 +20,7 @@ namespace rfs {
 	public:
 		explicit GameplaySession(FrozenChart chart, GameplaySessionConfig config = {});
 
-		std::optional<TapCommandBuffer> HandleLanePress(int lane, std::int32_t input_ms);
+		std::optional<TapCommandBuffer> HandleLaneTap(int lane, std::int32_t input_ms);
 		MissCommandBuffer Update(std::int32_t song_time_ms);
 		bool IsFinished(std::int32_t song_time_ms) const noexcept;
 		GameResult Summary() const noexcept;
