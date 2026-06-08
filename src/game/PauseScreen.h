@@ -6,6 +6,9 @@
 #include "GameConfig.h"
 
 namespace rfs {
+
+	enum class PauseMode { Menu, Countdown };
+
 	class PauseScreen : public IScreen {
 	public:
 		explicit PauseScreen(const GameContext& ctx);
@@ -25,5 +28,7 @@ namespace rfs {
 		GameConfig::UiLayout ui_{};
 		bool is_back_to_root_ = false;
 		bool was_playing_     = false;
+		PauseMode mode_       = PauseMode::Menu;
+		float countdown_ms_   = 0.f;
 	};
 }

@@ -7,7 +7,17 @@
       "generator": "Ninja Multi-Config",
       "binaryDir": "${sourceDir}/out/build/win64-vcpkg",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "ci-headless",
+      "inherits": "win64-vcpkg",
+      "binaryDir": "${sourceDir}/out/build/ci-headless",
+      "cacheVariables": {
+        "RFS_BUILD_APP": "OFF",
+        "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": "ON"
       }
     }
   ],
@@ -21,6 +31,29 @@
       "name": "win64-release-build",
       "configurePreset": "win64-vcpkg",
       "configuration": "Release"
+    },
+    {
+      "name": "ci-headless-build",
+      "configurePreset": "ci-headless",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "win64-debug-test",
+      "configurePreset": "win64-vcpkg",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "ci-headless-test",
+      "configurePreset": "ci-headless",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
     }
   ]
 }

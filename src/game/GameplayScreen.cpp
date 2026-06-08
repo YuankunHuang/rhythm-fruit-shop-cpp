@@ -6,6 +6,7 @@
 #include "DebugOverlay.h"
 #include <memory>
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include "UiDraw.h"
 
@@ -64,51 +65,189 @@ namespace rfs {
 		ctx_.song_clock.Reset();
 	}
 
-	void GameplayScreen::SpawnHitFx(int lane, JudgeResult result) {
-		HitSpark s;
-		s.lane = lane;
-		s.cx = layout_.LaneCenterX(static_cast<uint8_t>(lane));
-		s.cy = layout_.judge_y;
-		s.age_ms = 0.f;
-		s.color = JudgeColor(result);
-		hit_sparks_.push_back(s);
+	void GameplayScreen::SpawnHitFx(int lane, std::size_t note_index, JudgeResult result) {
+		const auto& note = session_.Chart().Notes()[note_index];
+		const uint32_t note_color =
+			GameColors::kNoteColors[note.visual_id % GameColors::kNoteColorCount];
+		const uint32_t judge_color = JudgeColor(result);
+
+		auto h = hit_bursts_.Acquire();
+		if (h.valid) {
+			if (HitBurst* b = hit_bursts_.TryGet(h.index)) {
+				b->lane = lane;
+				b->cx = layout_.LaneCenterX(static_cast<uint8_t>(lane));
+				b->cy = layout_.judge_y;
+				b->age_ms = 0.f;
+				b->judge_color = judge_color;
+				b->note_color = note_color;
+				b->result = result;
+			}
+		}
+
+		if (lane >= 0 && lane < static_cast<int>(lane_pulses_.size())) {
+			lane_pulses_[lane].age_ms = 0.f;
+			lane_pulses_[lane].color = judge_color;
+		}
 	}
 
 	void GameplayScreen::UpdateHitFx(float delta_sec) {
 		const float dt_ms = delta_sec * 1000.f;
-		for (auto& s : hit_sparks_) {
-			s.age_ms += dt_ms;
-		}
-		std::erase_if(hit_sparks_, [](const HitSpark& s) {
-			return s.age_ms >= GameConfig::kSparkLifetime;
+
+		hit_bursts_.ForEachActive([dt_ms](HitBurst& b) { b.age_ms += dt_ms; });
+		hit_bursts_.ReleaseIf([](const HitBurst& b) {
+			return b.age_ms >= GameConfig::kHitBurstLifetimeMs;
 		});
+
+		for (auto& p : lane_pulses_) {
+			if (p.age_ms >= 0.f) {
+				p.age_ms += dt_ms;
+				if (p.age_ms >= GameConfig::kJudgePulseMs) {
+					p.age_ms = -1.f;
+				}
+			}
+		}
+	}
+
+	namespace {
+		// Tier intensity for Perfect/Great/Good (Miss never spawns FX).
+		float TierScale(JudgeResult r) {
+			switch (r) {
+			case JudgeResult::Perfect: return 1.0f;
+			case JudgeResult::Great:   return 0.78f;
+			case JudgeResult::Good:    return 0.55f;
+			default:                   return 0.55f;
+			}
+		}
+
+		// Eased 0->1 progress with clamp; returns 0 once past 1.
+		float Phase(float age_ms, float dur_ms) {
+			if (age_ms < 0.f || age_ms >= dur_ms) return -1.f;
+			return age_ms / dur_ms;
+		}
 	}
 
 	void GameplayScreen::RenderHitFx() {
-		constexpr float kDurationMs = 280.f;
+		const float lane_w = layout_.lane_w;
+		const float note_h = layout_.note_h;
+		constexpr float kPi = 3.14159265f;
 
-		for (const auto& s : hit_sparks_) {
-			const float t = s.age_ms / kDurationMs;
-			const float fade = 1.f - t;
-			const float size = layout_.lane_w * (0.25f + t * 0.55f);
+		hit_bursts_.ForEachActive([&](const HitBurst& b) {
+			const float tier = TierScale(b.result);
 
+			// 1. Lane vertical flash (0..kLaneFlashMs): whole lane column, low alpha.
+			if (const float p = Phase(b.age_ms, GameConfig::kLaneFlashMs); p >= 0.f) {
+				const float fade = 1.f - p;
+				const float w = lane_w * 0.9f;
+				ctx_.renderer.SubmitQuad({
+					b.cx - w * 0.5f, layout_.spawn_y, w, layout_.FieldHeight(),
+					GameColors::WithAlpha(b.judge_color, fade * 0.10f * tier) });
+			}
+
+			// 2. Note-colored pop (0..kNotePopMs): grows 1.0 -> 1.35, fades out.
+			if (const float p = Phase(b.age_ms, GameConfig::kNotePopMs); p >= 0.f) {
+				const float fade = 1.f - p;
+				const float scale = 1.0f + p * 0.35f * tier;
+				const float w = (lane_w * 0.9f) * scale;
+				const float hgt = note_h * scale;
+				ctx_.renderer.SubmitQuad({
+					b.cx - w * 0.5f, b.cy - hgt * 0.5f, w, hgt,
+					GameColors::WithAlpha(b.note_color, fade * 0.8f) });
+			}
+
+			// 3. Bright core (0..kHitCoreMs): small near-white square, high alpha.
+			if (const float p = Phase(b.age_ms, GameConfig::kHitCoreMs); p >= 0.f) {
+				const float fade = 1.f - p;
+				const float s = lane_w * 0.22f * (0.6f + 0.4f * tier);
+				ctx_.renderer.SubmitQuad({
+					b.cx - s * 0.5f, b.cy - s * 0.5f, s, s,
+					GameColors::WithAlpha(0xFFFFFF00u | 0xFFu, fade * 0.85f) });
+			}
+
+			// 4. Expanding square ring (0..kHitRingMs): 4 lines forming a growing box.
+			auto draw_ring = [&](float p, float radius_scale, float alpha) {
+				if (p < 0.f) return;
+				const float fade = 1.f - p;
+				const float r = lane_w * (0.18f + p * radius_scale * tier);
+				const uint32_t c = GameColors::WithAlpha(b.judge_color, fade * alpha);
+				const float l = b.cx - r, rt = b.cx + r, tp = b.cy - r, bt = b.cy + r;
+				ctx_.renderer.SubmitLine({ l, tp, rt, tp, c });
+				ctx_.renderer.SubmitLine({ rt, tp, rt, bt, c });
+				ctx_.renderer.SubmitLine({ rt, bt, l, bt, c });
+				ctx_.renderer.SubmitLine({ l, bt, l, tp, c });
+			};
+			draw_ring(Phase(b.age_ms, GameConfig::kHitRingMs), 0.85f, 0.8f);
+			// Perfect-only outer ring, delayed ~40ms.
+			if (b.result == JudgeResult::Perfect) {
+				draw_ring(Phase(b.age_ms - 40.f, GameConfig::kHitRingMs), 1.15f, 0.5f);
+			}
+
+			// 5. Radial spokes (0..kHitSpokeMs): 6 lines from center outward.
+			if (const float p = Phase(b.age_ms, GameConfig::kHitSpokeMs); p >= 0.f) {
+				const float fade = 1.f - p;
+				const float inner = lane_w * 0.10f;
+				const float outer = lane_w * (0.25f + p * 0.6f * tier);
+				const uint32_t c = GameColors::WithAlpha(b.judge_color, fade * 0.7f);
+				constexpr int kSpokes = 6;
+				for (int i = 0; i < kSpokes; ++i) {
+					const float a = (static_cast<float>(i) / kSpokes) * 2.f * kPi;
+					const float ca = std::cos(a), sa = std::sin(a);
+					ctx_.renderer.SubmitLine({
+						b.cx + ca * inner, b.cy + sa * inner,
+						b.cx + ca * outer, b.cy + sa * outer, c });
+				}
+			}
+
+			// 6. Judge-line horizontal sweep (0..kHitSweepMs): bright widening line.
+			if (const float p = Phase(b.age_ms, GameConfig::kHitSweepMs); p >= 0.f) {
+				const float fade = 1.f - p;
+				const float half_w = lane_w * (0.35f + p * 0.45f) * (0.7f + 0.3f * tier);
+				const uint32_t c = GameColors::WithAlpha(b.judge_color, fade * 0.9f);
+				ctx_.renderer.SubmitLine({ b.cx - half_w, b.cy, b.cx + half_w, b.cy, c });
+			}
+		});
+	}
+
+	void GameplayScreen::RenderJudgeLine() {
+		const auto& L = layout_;
+		const float judge_glow_h = ui_.Px(12.f);
+		const float judge_line_h = ui_.Px(6.f);
+
+		// Per-lane base segments (same look as before, split per lane).
+		for (uint8_t i = 0; i < LaneCount(); ++i) {
+			const float x = L.LaneX(i);
+			ctx_.renderer.SubmitQuad({ x, L.judge_y - judge_glow_h, L.lane_w, judge_glow_h * 2.f, GameColors::kJudgeGlow });
+			ctx_.renderer.SubmitQuad({ x, L.judge_y - judge_line_h, L.lane_w, judge_line_h * 2.f, GameColors::kJudgeLine });
+		}
+	}
+
+	void GameplayScreen::RenderJudgePulse() {
+		const auto& L = layout_;
+		const float judge_line_h = ui_.Px(6.f);
+
+		for (uint8_t i = 0; i < LaneCount(); ++i) {
+			const auto& p = lane_pulses_[i];
+			if (p.age_ms < 0.f) continue;
+
+			const float x = L.LaneX(i);
+			// Front 80ms: bright flash; then decaying afterglow over kJudgePulseMs.
+			float intensity;
+			if (p.age_ms < 80.f) {
+				intensity = 0.55f + 0.45f * (p.age_ms / 80.f);
+			} else {
+				const float t = (p.age_ms - 80.f) / (GameConfig::kJudgePulseMs - 80.f);
+				intensity = std::clamp(1.f - t, 0.f, 1.f);
+			}
+			const float h = judge_line_h * (1.4f + 0.8f * intensity);
 			ctx_.renderer.SubmitQuad({
-				s.cx - size * 0.5f,
-				s.cy - layout_.note_h * 0.5f,
-				size,
-				layout_.note_h * 0.9f,
-				GameColors::WithAlpha(s.color, fade * 0.55f) });
-
-			const float half_w = size * 0.7f;
-			const uint32_t line_c = GameColors::WithAlpha(s.color, fade * 0.85f);
-			ctx_.renderer.SubmitLine({ s.cx - half_w, s.cy, s.cx + half_w, s.cy, line_c });
+				x, L.judge_y - h, L.lane_w, h * 2.f,
+				GameColors::WithAlpha(p.color, intensity * 0.85f) });
 		}
 	}
 
 	void GameplayScreen::ApplyPresentation(const JudgeCommand& cmd) {
 		if (cmd.kind == JudgeCommand::Kind::TapHit) {
 			const int lane = static_cast<int>(session_.Chart().Notes()[cmd.note_index].lane);
-			SpawnHitFx(lane, cmd.result);
+			SpawnHitFx(lane, cmd.note_index, cmd.result);
 		}
 		last_judge_ = cmd.result;
 		judge_display_ms_ = GameConfig::kJudgeDisplayMs;
@@ -224,10 +363,7 @@ namespace rfs {
 		ctx_.renderer.SubmitLine({ L.field_left, L.spawn_y, L.field_left, L.judge_y, GameColors::kLaneLine });
 		ctx_.renderer.SubmitLine({ L.field_right, L.spawn_y, L.field_right, L.judge_y, GameColors::kLaneLine });
 
-		const float judge_glow_h = ui_.Px(12.f);
-		const float judge_line_h = ui_.Px(6.f);
-		ctx_.renderer.SubmitQuad({ L.field_left, L.judge_y - judge_glow_h, L.field_right - L.field_left, judge_glow_h * 2.f, GameColors::kJudgeGlow });
-		ctx_.renderer.SubmitQuad({ L.field_left, L.judge_y - judge_line_h, L.field_right - L.field_left, judge_line_h * 2.f, GameColors::kJudgeLine });
+		RenderJudgeLine();
 
 		float approach = static_cast<float>(GameConfig::kSpeedLevels[ctx_.session.speed_idx]);
 		const auto& notes = session_.Chart().Notes();
@@ -246,6 +382,7 @@ namespace rfs {
 		}
 
 		RenderHitFx();
+		RenderJudgePulse();
 
 		const float cx = ui_.content_center_x;
 		const float judge_anchor_y = ui_.content_top + ui_.win_h * 0.35f;
@@ -343,7 +480,7 @@ namespace rfs {
 			? evt.event_song_time_ms
 			: static_cast<std::int32_t>(song_time_ms_);
 
-		if (auto taps = session_.HandleLanePress(lane, input_ms)) {
+		if (auto taps = session_.HandleLaneTap(lane, input_ms)) {
 			for (const auto& cmd : taps->Span()) {
 				ctx_.session.last_judge_delta_ms = input_ms
 					- (session_.Chart().Notes()[cmd.note_index].time_ms + session_.Config().song_offset_ms);

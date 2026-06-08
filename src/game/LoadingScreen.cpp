@@ -44,7 +44,7 @@ namespace rfs {
 		, chart_path_(std::move(chart_path))
 		, cover_path_(GameConfig::ResolveCoverPath(std::move(cover_path)))
 	{
-		future_ = std::async(std::launch::async, DoLoad, std::move(chart_path), std::move(difficulty));
+		future_ = std::async(std::launch::async, DoLoad, chart_path_, std::move(difficulty));
 	}
 
 	void LoadingScreen::OnEnter() {

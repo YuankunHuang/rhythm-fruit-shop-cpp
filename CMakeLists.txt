@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
 project(rhythm_fruit_shop LANGUAGES CXX)
 
+option(RFS_BUILD_APP "Build SFML/miniaudio GUI app + demo (OFF for headless CI)" ON)
+
 include(cmake/Warnings.cmake)
 
 if (MSVC)
@@ -33,18 +35,20 @@ add_library(rfs_platform_iface INTERFACE)
 target_include_directories(rfs_platform_iface INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/platform)
 target_link_libraries(rfs_platform_iface INTERFACE rfs_core)
 
-# rfs_platform_sfml, depends on rfs_platform_iface.
-find_package(SFML 2.6 COMPONENTS system window graphics REQUIRED)
-add_library(rfs_platform_sfml STATIC
-	"src/platform/sfml/SfmlWindow.cpp"
-	"src/platform/sfml/SfmlRenderer.cpp"
-	"src/platform/sfml/SfmlInputSource.cpp"
- )
-target_include_directories(rfs_platform_sfml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(rfs_platform_sfml
-	PUBLIC rfs_platform_iface
-	PRIVATE sfml-graphics sfml-window sfml-system rfs_warnings
-)
+if (RFS_BUILD_APP)
+	# rfs_platform_sfml, depends on rfs_platform_iface.
+	find_package(SFML 2.6 COMPONENTS system window graphics REQUIRED)
+	add_library(rfs_platform_sfml STATIC
+		"src/platform/sfml/SfmlWindow.cpp"
+		"src/platform/sfml/SfmlRenderer.cpp"
+		"src/platform/sfml/SfmlInputSource.cpp"
+	 )
+	target_include_directories(rfs_platform_sfml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+	target_link_libraries(rfs_platform_sfml
+		PUBLIC rfs_platform_iface
+		PRIVATE sfml-graphics sfml-window sfml-system rfs_warnings
+	)
+endif()
 
 # rfs_platform_miniaudio, depends on rfs_platform_iface.
 add_library(rfs_platform_miniaudio STATIC
@@ -82,20 +86,22 @@ target_link_libraries(rfs_app
 	PRIVATE rfs_warnings
 )
 
-# rfs_demo: executable target for the main application.
-add_executable(rfs_demo 
-	src/main.cpp
-)
-set_target_properties(rfs_demo PROPERTIES
-	OUTPUT_NAME "RhythmFruitShop"
-	DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
-target_link_libraries(rfs_demo PRIVATE
-    rfs_app
-    rfs_platform_miniaudio
-	rfs_platform_sfml
-    sfml-graphics sfml-window sfml-system
-)
+if (RFS_BUILD_APP)
+	# rfs_demo: executable target for the main application.
+	add_executable(rfs_demo 
+		src/main.cpp
+	)
+	set_target_properties(rfs_demo PROPERTIES
+		OUTPUT_NAME "RhythmFruitShop"
+		DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	)
+	target_link_libraries(rfs_demo PRIVATE
+		rfs_app
+		rfs_platform_miniaudio
+		rfs_platform_sfml
+		sfml-graphics sfml-window sfml-system
+	)
+endif()
 
 # rfs_tests: test target, depends on rfs_core and one platform implementation.
 add_executable(rfs_tests
@@ -105,6 +111,8 @@ add_executable(rfs_tests
 	tests/TestJudgementSystem.cpp
 	tests/TestScoreSystem.cpp
 	tests/TestGameplaySession.cpp
+	tests/TestFixedSlotPool.cpp
+	tests/TestPerfectRunInvariant.cpp
 )
 set_target_properties(rfs_tests PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
