@@ -113,6 +113,8 @@ add_executable(rfs_tests
 	tests/TestGameplaySession.cpp
 	tests/TestFixedSlotPool.cpp
 	tests/TestPerfectRunInvariant.cpp
+	tests/TestZeroAllocHotPath.cpp
+	tests/support/AllocationGuard.cpp
 )
 set_target_properties(rfs_tests PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
