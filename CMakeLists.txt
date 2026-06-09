@@ -22,7 +22,9 @@ add_library(rfs_core STATIC
 	src/rhythm/JudgementSystem.cpp
 	src/rhythm/ScoreSystem.cpp
 	src/rhythm/RuntimeStore.cpp
-	"src/rhythm/GameplaySession.cpp"
+	src/rhythm/GameplaySession.cpp
+	src/rhythm/RecordingSession.cpp
+	src/rhythm/ReplayHeadless.cpp
 )
 target_include_directories(rfs_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rfs_core 
@@ -114,6 +116,7 @@ add_executable(rfs_tests
 	tests/TestFixedSlotPool.cpp
 	tests/TestPerfectRunInvariant.cpp
 	tests/TestZeroAllocHotPath.cpp
+	tests/TestRecordAndReplay.cpp
 	tests/support/AllocationGuard.cpp
 )
 set_target_properties(rfs_tests PROPERTIES

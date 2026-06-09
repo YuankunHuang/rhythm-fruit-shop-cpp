@@ -33,7 +33,7 @@ namespace rfs {
 	GameplayScreen::GameplayScreen(const GameContext& ctx, FrozenChart chart, std::string cover_path)
 		: ctx_(ctx)
 		, cover_path_(std::move(cover_path))
-		, session_(std::move(chart), MakeSessionConfig(ctx_.session))
+		, session_(std::move(chart), MakeSessionConfig(ctx_.session), record_)
 	{
 	}
 
@@ -66,7 +66,7 @@ namespace rfs {
 	}
 
 	void GameplayScreen::SpawnHitFx(int lane, std::size_t note_index, JudgeResult result) {
-		const auto& note = session_.Chart().Notes()[note_index];
+		const auto& note = session_.Gameplay().Chart().Notes()[note_index];
 		const uint32_t note_color =
 			GameColors::kNoteColors[note.visual_id % GameColors::kNoteColorCount];
 		const uint32_t judge_color = JudgeColor(result);
@@ -246,7 +246,7 @@ namespace rfs {
 
 	void GameplayScreen::ApplyPresentation(const JudgeCommand& cmd) {
 		if (cmd.kind == JudgeCommand::Kind::TapHit) {
-			const int lane = static_cast<int>(session_.Chart().Notes()[cmd.note_index].lane);
+			const int lane = static_cast<int>(session_.Gameplay().Chart().Notes()[cmd.note_index].lane);
 			SpawnHitFx(lane, cmd.note_index, cmd.result);
 		}
 		last_judge_ = cmd.result;
@@ -268,8 +268,8 @@ namespace rfs {
 
 		if (paused_) return;
 
-		const float chart_end_ms = static_cast<float>(session_.ChartEndMs());
-		const float gameplay_end_ms = static_cast<float>(session_.GameplayEndMs());
+		const float chart_end_ms = static_cast<float>(session_.Gameplay().ChartEndMs());
+		const float gameplay_end_ms = static_cast<float>(session_.Gameplay().GameplayEndMs());
 
 		if (is_in_lead_in_) {
 			lead_in_ms_ += ctx.delta_time * 1000.f;
@@ -318,17 +318,17 @@ namespace rfs {
 
 		if (!result_pushed_
 			&& progress_time_ms_ >= chart_end_ms
-			&& session_.Store().NextIdx() >= session_.Chart().Notes().size())
+			&& session_.Gameplay().Store().NextIdx() >= session_.Gameplay().Chart().Notes().size())
 		{
 			result_pushed_ = true;
-			ctx_.ui.ReplaceTop(std::make_unique<ResultScreen>(ctx_, session_.Summary(), cover_path_));
+			ctx_.ui.ReplaceTop(std::make_unique<ResultScreen>(ctx_, session_.Gameplay().Summary(), cover_path_));
 		}
 	}
 
 	void GameplayScreen::Render() {
 		const auto& L = layout_;
 		const uint8_t lane_count = LaneCount();
-		const float chart_end_ms = static_cast<float>(session_.ChartEndMs());
+		const float chart_end_ms = static_cast<float>(session_.Gameplay().ChartEndMs());
 
 		UiDraw::CoverFill(ctx_.renderer, cover_handle_, ui_.win_w, ui_.win_h);
 		ctx_.renderer.SubmitQuad({ 0.f, 0.f, ui_.win_w, ui_.win_h, 0x00000088 });
@@ -366,9 +366,9 @@ namespace rfs {
 		RenderJudgeLine();
 
 		float approach = static_cast<float>(GameConfig::kSpeedLevels[ctx_.session.speed_idx]);
-		const auto& notes = session_.Chart().Notes();
-		for (auto i = session_.Store().NextIdx(); i < notes.size(); ++i) {
-			if (session_.Store().NoteResolved()[i]) continue;
+		const auto& notes = session_.Gameplay().Chart().Notes();
+		for (auto i = session_.Gameplay().Store().NextIdx(); i < notes.size(); ++i) {
+			if (session_.Gameplay().Store().NoteResolved()[i]) continue;
 			const auto& note = notes[i];
 			float t = static_cast<float>(note.time_ms + ctx_.session.song_offset_ms) - song_time_ms_;
 			float norm = t / approach;
@@ -413,8 +413,8 @@ namespace rfs {
 				cx, judge_anchor_y,
 				Anchor::Center, TextStyle::Judge,
 				text, fill_c, outline_c });
-			if (session_.Score().Combo() > 1) {
-				const std::string combo_line = std::to_string(session_.Score().Combo());
+			if (session_.Gameplay().Score().Combo() > 1) {
+				const std::string combo_line = std::to_string(session_.Gameplay().Score().Combo());
 				GameColors::TextColorsWithFade(GameColors::kTextGold, GameColors::kOutlineBlack, fade, fill_c, outline_c);
 				ctx_.renderer.SubmitText({
 					cx, judge_anchor_y + ui_.font_hud * 1.4f,
@@ -441,14 +441,14 @@ namespace rfs {
 		ctx_.renderer.SubmitText({
 			hud_x, ui_.content_top,
 			Anchor::TopRight, TextStyle::Hud,
-			"SCORE " + std::to_string(session_.Score().Score()),
+			"SCORE " + std::to_string(session_.Gameplay().Score().Score()),
 			GameColors::kTextWhite, GameColors::kOutlineBlack });
 
 		if (ctx_.session.show_debug_overlay) {
 			RenderDebugOverlay(
 				ctx_.renderer, ui_, ctx_.session,
-				session_.Store().NextIdx(), song_time_ms_,
-				static_cast<int>(session_.Chart().Notes().size()));
+				session_.Gameplay().Store().NextIdx(), song_time_ms_,
+				static_cast<int>(session_.Gameplay().Chart().Notes().size()));
 		}
 	}
 
@@ -483,7 +483,7 @@ namespace rfs {
 		if (auto taps = session_.HandleLaneTap(lane, input_ms)) {
 			for (const auto& cmd : taps->Span()) {
 				ctx_.session.last_judge_delta_ms = input_ms
-					- (session_.Chart().Notes()[cmd.note_index].time_ms + session_.Config().song_offset_ms);
+					- (session_.Gameplay().Chart().Notes()[cmd.note_index].time_ms + session_.Gameplay().Config().song_offset_ms);
 				ApplyPresentation(cmd);
 			}
 		}

@@ -3,9 +3,9 @@
 namespace rfs {
 	GameplaySession::GameplaySession(FrozenChart chart, GameplaySessionConfig config)
 		: chart_(std::move(chart))
-		, config_(config)
+		, config_(std::move(config))
 		, store_(chart_.Notes().size())
-		, judge_(config.judgement)
+		, judge_(config_.judgement)
 	{
 		const auto& notes = chart_.Notes();
 		const std::int32_t last = notes.empty() ? 0 : notes[notes.size() - 1].time_ms;

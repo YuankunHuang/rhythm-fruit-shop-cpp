@@ -3,7 +3,8 @@
 #include "../app/IScreen.h"
 #include "../app/FrameContext.h"
 #include "../rhythm/FrozenChart.h"
-#include "../rhythm/GameplaySession.h"
+//#include "../rhythm/GameplaySession.h"
+#include "../rhythm/RecordingSession.h"
 #include "../rhythm/JudgeCommand.h"
 #include "GameContext.h"
 #include "GameLayout.h"
@@ -77,6 +78,8 @@ namespace rfs {
 		bool is_in_lead_in_ = false;
 		float lead_in_ms_ = 0.f;
 
-		GameplaySession session_;
+		//GameplaySession session_;
+		ReplayRecord record_{};
+		RecordingSession session_;
 	};
 }
