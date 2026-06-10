@@ -1,10 +1,10 @@
 # Rhythm Fruit Shop — C++ Core
 
-Native rhythm demo for [Rhythm Fruit Shop](../README.md). Same game world as the web prototype at the repo root, but a **separate C++ codebase** — not a port. Different charts, assets, and schema.
+Native C++ rhythm game core. Same game world as the [Rhythm Fruit Shop web prototype](https://github.com/YuankunHuang/rhythm-fruit-shop), but a **separate C++ codebase** — not a port. Different charts, assets, and schema.
 
 Four-lane falling notes. Visuals stay intentionally minimal while the clock pipeline, platform layering, and playable loop come together.
 
-Web prototype (visuals, zh-CN narrative, shop loop) → [../README.md#web-prototype](../README.md#web-prototype)
+Web prototype (visuals, zh-CN narrative, shop loop) → [YuankunHuang/rhythm-fruit-shop](https://github.com/YuankunHuang/rhythm-fruit-shop)
 
 ---
 
@@ -12,12 +12,12 @@ Web prototype (visuals, zh-CN narrative, shop loop) → [../README.md#web-protot
 
 **Requirements:** Visual Studio 2022/2026 with **Desktop development with C++**, CMake 3.24+, vcpkg (manifest mode)
 
-1. Open this folder (`cpp_core/`) in Visual Studio (**File → Open → Folder**).
+1. Open the repository root in Visual Studio (**File → Open → Folder**).
 2. Select CMake preset **`win64-vcpkg`** (Ninja Multi-Config + vcpkg manifest).
 3. Wait for configure. vcpkg installs **nlohmann-json** + **doctest**, plus **SFML 2.6.1** via the default `app` feature, from `vcpkg.json`. (The headless `ci-headless` preset turns the `app` feature off and skips SFML — see [Headless build](#headless-build-ci-headless).)
 4. Set **`rfs_demo`** as the startup project and press **F5**.
 
-The debugger working directory is set to `cpp_core/` in CMake, so asset paths such as `assets/audio/...` resolve correctly.
+The debugger working directory is set to the repository root in CMake, so asset paths such as `assets/audio/...` resolve correctly.
 
 > **Configure from an x64 environment.** The `win64-vcpkg` / `ci-headless` presets target the `x64-windows` vcpkg triplet. Visual Studio's "Open Folder" picks up an x64 toolchain automatically; from a command line, use the **x64 Native Tools Command Prompt for VS** (or run `vcvarsall.bat x64`). If a build directory was first configured with a 32-bit `cl.exe`, the cached compiler and the x64 triplet will conflict at link time — delete `out/build/<preset>/` and reconfigure from an x64 shell.
 
@@ -53,17 +53,7 @@ MainMenu → ChartSelect → Loading (async chart load) → Gameplay → Result 
                          Pause overlay (Esc)
 ```
 
-Song list and audio paths come from `assets/charts/catalog.json`. Rebuild the catalog after importing charts or converting audio:
-
-```bat
-python ..\scripts\rebuild_cpp_catalog.py
-```
-
-Import osu!mania charts from `imports/<song-id>/mug/*.osz`:
-
-```bat
-..\03_import_for_cpp.bat
-```
+Song list and audio paths come from `assets/charts/catalog.json`. Chart authoring and the osu!mania import pipeline live in the companion repo ([YuankunHuang/rhythm-fruit-shop](https://github.com/YuankunHuang/rhythm-fruit-shop)); this repo ships ready-to-play charts under `assets/charts/`.
 
 Example playable entries:
 
@@ -121,7 +111,7 @@ Input events carry a per-key host-monotonic timestamp at poll time; judgment com
 | `rfs_demo` | Runnable game executable (only built when `RFS_BUILD_APP=ON`) |
 | `rfs_tests` | Headless core tests — determinism (perfect-run invariant), zero-alloc hot-path contract, `FixedSlotPool`, no window/audio device |
 
-Run tests from the `cpp_core/` working directory:
+Run tests from the repository root:
 
 ```bat
 out\build\win64-vcpkg\Debug\rfs_tests.exe
@@ -144,41 +134,34 @@ ctest --preset ci-headless-test
 
 ## Release Packaging (Windows x64)
 
-From the **repository root** (not `cpp_core/`):
+Build the `win64-vcpkg` Release configuration, then stage from the repository root:
 
 ```bat
-08_package_cpp_core_release.bat
+python scripts\package_cpp_core_release.py
 ```
 
 This script:
 
-1. Uses Visual Studio's bundled CMake (not an older PATH cmake)
-2. Configures preset **`win64-vcpkg`** and builds **`win64-release-build`**
-3. Stages `dist\RhythmFruitShop-win64\` (exe, SFML DLLs, optimized assets, `PLAY.txt`)
-4. Creates `dist\RhythmFruitShop-win64.zip`
+1. Copies `RhythmFruitShop.exe` and the vcpkg runtime DLLs
+2. Stages optimized assets via `scripts\package_cpp_core_share.py` (cover JPEG resize, mp3 re-encode, chart JSON minify)
+3. Produces `dist\RhythmFruitShop-win64\` (exe, DLLs, assets, `PLAY.txt`) and `dist\RhythmFruitShop-win64.zip`
 
 Requirements: Visual Studio with C++ workload, Python 3 (+ Pillow for asset optimization). Optional: `ffmpeg` on PATH for mp3 re-encode during asset staging.
 
-The same staging logic is available as:
-
-```bat
-python scripts\package_cpp_core_release.py --build-root cpp_core\out\build\win64-vcpkg
-```
-
 ### CI
 
-Two GitHub Actions workflows cover `cpp_core`:
+Two GitHub Actions workflows:
 
-- **cpp_core CI** (`.github/workflows/cpp_core-ci.yml`) — runs on every push to `main` and on pull requests touching `cpp_core/`. It configures the headless `ci-headless` preset (no SFML), builds `rfs_tests`, and runs the full test suite via `ctest`. The `headless-tests` job is a **required status check** on `main` (branch ruleset), so changes must pass it before merging.
-- **C++ Release (Windows x64)** (`.github/workflows/cpp-release-windows.yml`) — triggered manually via **workflow_dispatch**. Builds the full app with the `win64-vcpkg` preset and uploads `RhythmFruitShop-win64.zip` as an artifact.
+- **CI** (`.github/workflows/ci.yml`) — runs on every push to `main` and on pull requests. It configures the headless `ci-headless` preset (no SFML), builds `rfs_tests`, and runs the full test suite via `ctest`. The `headless-tests` job is a **required status check** on `main` (branch ruleset), so changes must pass it before merging.
+- **C++ Release (Windows x64)** (`.github/workflows/release-windows.yml`) — triggered manually via **workflow_dispatch**. Builds the full app with the `win64-vcpkg` preset and uploads `RhythmFruitShop-win64.zip` as an artifact.
 
 ## Project Layout
 
 ```
-cpp_core/
   assets/          charts, audio, fonts
   cmake/           warnings, dependency guards
   external/        miniaudio (single-header)
+  scripts/         release packaging (package_cpp_core_release.py + share.py)
   src/
     app/           Application, UIManager, IScreen
     game/          screens, layout, rules

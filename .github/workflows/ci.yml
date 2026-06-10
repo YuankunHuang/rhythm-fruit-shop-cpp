@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  headless-tests:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up MSVC (cl in PATH) (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Point preset at preinstalled vcpkg # windows-latest preinstalled ninja + vcpkg
+        run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      - name: Configure (headless, no GUI deps)
+        run: cmake --preset ci-headless
+
+      - name: Build tests
+        run: cmake --build --preset ci-headless-build --target rfs_tests
+
+      - name: Run tests
+        run: ctest --preset ci-headless-test
