@@ -1,0 +1,53 @@
+name: C++ Release (Windows x64)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: pip install pillow
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: d59510da59a2ee8b943509998b63da7b472d93cf
+          runVcpkgInstall: true
+          vcpkgDirectory: "${{ github.workspace }}/vcpkg"
+          vcpkgJsonGlob: "vcpkg.json"
+
+      - name: Configure CMake
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        run: cmake --preset win64-vcpkg
+
+      - name: Build Release
+        run: cmake --build --preset win64-release-build --target rfs_demo
+
+      - name: Stage release
+        run: >
+          python scripts/package_cpp_core_release.py
+          --build-root out/build/win64-vcpkg
+          --out dist/RhythmFruitShop-win64
+          --zip dist/RhythmFruitShop-win64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RhythmFruitShop-win64
+          path: dist/RhythmFruitShop-win64.zip
+          if-no-files-found: error
