@@ -48,7 +48,7 @@ namespace rfs {
 		int fallback_handle_ = -1;      // cover-fallback.png, loaded once at startup
 		int cover_pending_handle_ = -2; // -2 = no pending load
 		float crossfade_t_ = 1.f;       // 0→1; 1 means crossfade complete
-		std::string cover_path_loaded_;
+		std::string cover_path_loaded_ = "\x01"; // sentinel: never matches any real path on first call
 
 		static constexpr float kCrossfadeSpeed = 1.f / 0.4f; // 0.4s
 	};

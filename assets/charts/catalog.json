@@ -148,7 +148,6 @@
     },
     {
       "id": "test-fixture",
-      "hidden": true,
       "title": "Test Fixture",
       "audio": "",
       "chart": "assets/charts/test-fixture.rfs.json",
@@ -156,7 +155,8 @@
       "difficulties": [
         "easy",
         "expert"
-      ]
+      ],
+      "hidden": true
     },
     {
       "id": "unwelcome-school",

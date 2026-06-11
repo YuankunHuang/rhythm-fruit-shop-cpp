@@ -46,6 +46,20 @@ def main() -> int:
     songs: list[dict] = []
     missing_audio: list[str] = []
 
+    # Preserve manual fields (e.g. hidden) that the script does not manage
+    manual_fields: dict[str, dict] = {}
+    if catalog_path.exists():
+        try:
+            existing = json.loads(catalog_path.read_text(encoding="utf-8"))
+            for s in existing.get("songs", []):
+                sid = s.get("id", "")
+                extra = {k: v for k, v in s.items()
+                         if k not in ("id", "title", "audio", "chart", "cover", "difficulties")}
+                if extra:
+                    manual_fields[sid] = extra
+        except Exception:
+            pass  # corrupt or missing — ignored
+
     for chart_path in sorted(charts_dir.glob("*.rfs.json")):
         try:
             data = json.loads(chart_path.read_text(encoding="utf-8"))
@@ -75,6 +89,9 @@ def main() -> int:
 
         if not entry.get("audio"):
             missing_audio.append(song_id)
+
+        if entry["id"] in manual_fields:
+            entry.update(manual_fields[entry["id"]])
 
         songs.append(entry)
 
