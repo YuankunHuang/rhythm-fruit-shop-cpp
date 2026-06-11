@@ -4,13 +4,13 @@ cd /d "%~dp0"
 
 echo Rhythm Fruit Shop C++ - Convert source audio to MP3 192kbps
 echo.
-echo Default source: audio\  (override with --audio-dir)
+echo Default source: assets\audio\source\  (override with --audio-dir)
 echo Default output: assets\audio\
 echo.
 echo Tip: use --audio-dir ..\rhythm-fruit-shop\audio to point at the web prototype's audio folder.
 echo.
 echo Options:
-echo   --audio-dir PATH     Source audio directory (default: audio\)
+echo   --audio-dir PATH     Source audio directory (default: assets\audio\source\)
 echo   --force              Re-encode even if manifest hash matches
 echo   --normalize-audio    Run EBU R128 loudnorm (only if source is not pre-normalized)
 echo   --dry-run            Show what would be done without converting

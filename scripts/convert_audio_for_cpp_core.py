@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_CPP_REPO = ROOT.parent / "rhythm-fruit-shop-cpp"
-DEFAULT_AUDIO_DIR = ROOT / "audio"
+DEFAULT_AUDIO_DIR = ROOT / "assets" / "audio" / "source"
 DEFAULT_OUT_DIR = ROOT / "assets" / "audio"
 CPP_REPO = ROOT
 MANIFEST_NAME = "cpp-audio-manifest.json"
@@ -175,7 +175,9 @@ def record_matches(record: dict | None, src: Path, dst: Path) -> bool:
 
 def output_path_for_source(audio_dir: Path, out_dir: Path, src: Path) -> Path:
     rel_src = src.relative_to(audio_dir)
-    return out_dir / rel_src.with_suffix(".mp3")
+    # Normalize filename stem: underscores → hyphens to match song IDs (e.g. lets_drive → lets-drive)
+    normalized_stem = rel_src.stem.replace("_", "-")
+    return out_dir / rel_src.parent / (normalized_stem + ".mp3")
 
 
 def convert_one(src: Path, dst: Path, ffmpeg: str, normalize_audio: bool) -> dict[str, object]:
