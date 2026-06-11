@@ -54,8 +54,9 @@ TEST_CASE("AudioPathResolver - resolves sample clips (service/track)") {
     REQUIRE(lets_drive.has_value());
     CHECK(lets_drive->generic_string().find("lets-drive") != std::string::npos);
 
-    const auto drama = rfs::AudioPathResolver::Resolve("drama");
-    REQUIRE(drama.has_value());
+    const auto megaburn = rfs::AudioPathResolver::Resolve("megaburn");
+    REQUIRE(megaburn.has_value());
+    CHECK(megaburn->generic_string().find("megaburn") != std::string::npos);
 }
 
 TEST_CASE("SongDisplay - properly parses and displays song info") {

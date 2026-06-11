@@ -59,9 +59,9 @@ Example playable entries:
 
 | Song ID | Difficulty | Audio |
 |---------|------------|-------|
-| `lemon-water-light` | service | `assets/audio/service/lemon_water_light.mp3` |
-| `lets-drive` | easy | `assets/audio/tracks/lets_drive.mp3` |
-| `drama` | easy/normal/hard/expert | `assets/audio/tracks/drama.mp3` |
+| `lemon-water-light` | service | `assets/audio/service/lemon-water-light.mp3` |
+| `lets-drive` | easy/normal/hard/expert | `assets/audio/tracks/lets-drive.mp3` |
+| `megaburn` | easy/normal/hard/expert | `assets/audio/tracks/megaburn.mp3` |
 
 ## Architecture
 
