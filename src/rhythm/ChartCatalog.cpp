@@ -43,6 +43,7 @@ namespace rfs {
 				}
 			}
 
+			if (entry.value("hidden", false)) continue;
 			if (song.id.empty() || song.chart_path.empty() || song.difficulties.empty()) {
 				continue;
 			}

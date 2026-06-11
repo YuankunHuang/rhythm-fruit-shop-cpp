@@ -148,6 +148,7 @@
     },
     {
       "id": "test-fixture",
+      "hidden": true,
       "title": "Test Fixture",
       "audio": "",
       "chart": "assets/charts/test-fixture.rfs.json",

@@ -34,6 +34,7 @@ namespace rfs {
 			catalog_ok_ = true;
 		}
 		fallback_handle_ = ctx_.renderer.LoadTexture(GameConfig::kFallbackCoverPath);
+		cover_handle_ = fallback_handle_;
 	}
 
 	void ChartSelectScreen::OnEnter() {
