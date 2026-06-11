@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_CPP_REPO = ROOT.parent / "rhythm-fruit-shop-cpp"
-DEFAULT_AUDIO_DIR = ROOT / "audio"
+DEFAULT_AUDIO_DIR = ROOT / "assets" / "audio" / "source"
 DEFAULT_OUT_DIR = ROOT / "assets" / "audio"
 CPP_REPO = ROOT
 MANIFEST_NAME = "cpp-audio-manifest.json"
