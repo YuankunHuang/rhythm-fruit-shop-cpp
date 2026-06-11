@@ -21,20 +21,20 @@
       ]
     },
     {
-      "id": "fruit-cup",
-      "title": "Fruit Cup",
-      "audio": "assets/audio/service/fruit-cup.mp3",
-      "chart": "assets/charts/fruit-cup.rfs.json",
+      "id": "fruit-cup-quiet",
+      "title": "Fruit Cup Quiet",
+      "audio": "assets/audio/service/fruit-cup-quiet.mp3",
+      "chart": "assets/charts/fruit-cup-quiet.rfs.json",
       "cover": "",
       "difficulties": [
         "service"
       ]
     },
     {
-      "id": "fruit-cup-quiet",
-      "title": "Fruit Cup Quiet",
-      "audio": "assets/audio/service/fruit-cup-quiet.mp3",
-      "chart": "assets/charts/fruit-cup-quiet.rfs.json",
+      "id": "fruit-cup",
+      "title": "Fruit Cup",
+      "audio": "assets/audio/service/fruit-cup.mp3",
+      "chart": "assets/charts/fruit-cup.rfs.json",
       "cover": "",
       "difficulties": [
         "service"
@@ -91,16 +91,6 @@
       ]
     },
     {
-      "id": "lemon-water",
-      "title": "Lemon Water",
-      "audio": "assets/audio/service/lemon-water.mp3",
-      "chart": "assets/charts/lemon-water.rfs.json",
-      "cover": "",
-      "difficulties": [
-        "service"
-      ]
-    },
-    {
       "id": "lemon-water-light",
       "title": "Lemon Water Light",
       "audio": "assets/audio/service/lemon-water-light.mp3",
@@ -111,6 +101,29 @@
       ]
     },
     {
+      "id": "lemon-water",
+      "title": "Lemon Water",
+      "audio": "assets/audio/service/lemon-water.mp3",
+      "chart": "assets/charts/lemon-water.rfs.json",
+      "cover": "",
+      "difficulties": [
+        "service"
+      ]
+    },
+    {
+      "id": "lets-drive",
+      "title": "Lets Drive",
+      "audio": "assets/audio/tracks/lets-drive.mp3",
+      "chart": "assets/charts/lets-drive.rfs.json",
+      "cover": "assets/covers/lets-drive/cover.png",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
       "id": "lychee-juice",
       "title": "Lychee Juice",
       "audio": "assets/audio/service/lychee-juice.mp3",
@@ -118,6 +131,19 @@
       "cover": "",
       "difficulties": [
         "service"
+      ]
+    },
+    {
+      "id": "megaburn",
+      "title": "Megaburn",
+      "audio": "assets/audio/tracks/megaburn.mp3",
+      "chart": "assets/charts/megaburn.rfs.json",
+      "cover": "assets/covers/megaburn/cover.png",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
       ]
     },
     {
@@ -132,6 +158,19 @@
       ]
     },
     {
+      "id": "unwelcome-school",
+      "title": "Unwelcome School",
+      "audio": "assets/audio/tracks/unwelcome-school.mp3",
+      "chart": "assets/charts/unwelcome-school.rfs.json",
+      "cover": "assets/covers/unwelcome-school/cover.png",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    {
       "id": "warm-lemon-water",
       "title": "Warm Lemon Water",
       "audio": "assets/audio/service/warm-lemon-water.mp3",
@@ -139,6 +178,19 @@
       "cover": "",
       "difficulties": [
         "service"
+      ]
+    },
+    {
+      "id": "wings-of-silence",
+      "title": "Wings Of Silence",
+      "audio": "assets/audio/tracks/wings-of-silence.mp3",
+      "chart": "assets/charts/wings-of-silence.rfs.json",
+      "cover": "assets/covers/wings-of-silence/cover.png",
+      "difficulties": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
       ]
     }
   ]

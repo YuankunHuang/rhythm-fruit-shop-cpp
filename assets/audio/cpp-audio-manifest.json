@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "encoder": {
+    "codec": "mp3",
+    "bitrate_kbps": 192,
+    "sample_rate": 48000,
+    "channels": 2
+  },
+  "files": {
+    "assets/audio/tracks/lets-drive.mp3": {
+      "source": "audio/tracks/lets_drive.m4a",
+      "output": "assets/audio/tracks/lets-drive.mp3",
+      "chart_audio": "assets/audio/tracks/lets-drive.mp3",
+      "source_sha256": "f85254a22744c396133140e0d8d8f8a16192d26b74fdf55e67994387b4bf71d3",
+      "output_sha256": "9c107302209ea9112ea35ceecb48dcc5a306a4446f06f3d679b3915620782d73",
+      "encoder": {
+        "codec": "mp3",
+        "bitrate_kbps": 192,
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "analysis": null,
+      "result": null,
+      "normalized": false,
+      "updated_at": "2026-06-11T21:21:57.801232+00:00"
+    },
+    "assets/audio/tracks/megaburn.mp3": {
+      "source": "audio/tracks/megaburn.m4a",
+      "output": "assets/audio/tracks/megaburn.mp3",
+      "chart_audio": "assets/audio/tracks/megaburn.mp3",
+      "source_sha256": "8ebd697008b6c6c77483155106f90e26dd7356cfa8298ca03f39f36cc89fbd40",
+      "output_sha256": "24cffb2081ab63f3fa1ada246883b30d5c56424ff942aba668823eba6387ce1e",
+      "encoder": {
+        "codec": "mp3",
+        "bitrate_kbps": 192,
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "analysis": null,
+      "result": null,
+      "normalized": false,
+      "updated_at": "2026-06-11T21:21:59.410616+00:00"
+    },
+    "assets/audio/tracks/unwelcome-school.mp3": {
+      "source": "audio/tracks/unwelcome-school.m4a",
+      "output": "assets/audio/tracks/unwelcome-school.mp3",
+      "chart_audio": "assets/audio/tracks/unwelcome-school.mp3",
+      "source_sha256": "6a117ed911bee2a738c513b509ee4ce840c3b320cf03822e4bcd33f644c0d749",
+      "output_sha256": "13c49f89e1c4afa4848b2d73a922b0373f10b5ceda514a99d686faa3002a76e0",
+      "encoder": {
+        "codec": "mp3",
+        "bitrate_kbps": 192,
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "analysis": null,
+      "result": null,
+      "normalized": false,
+      "updated_at": "2026-06-11T21:22:00.942432+00:00"
+    },
+    "assets/audio/tracks/wings-of-silence.mp3": {
+      "source": "audio/tracks/wings-of-silence.m4a",
+      "output": "assets/audio/tracks/wings-of-silence.mp3",
+      "chart_audio": "assets/audio/tracks/wings-of-silence.mp3",
+      "source_sha256": "53ba4a50920754759f51a9266f4cceaa594facff85cabd7f63cf7b3701294b08",
+      "output_sha256": "8745f4b3cde855215b8037bfc766d22313188759e0a5e5dd40628ae22cd1b594",
+      "encoder": {
+        "codec": "mp3",
+        "bitrate_kbps": 192,
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "analysis": null,
+      "result": null,
+      "normalized": false,
+      "updated_at": "2026-06-11T21:22:02.871672+00:00"
+    }
+  },
+  "updated_at": "2026-06-11T21:22:02.871932+00:00"
+}
