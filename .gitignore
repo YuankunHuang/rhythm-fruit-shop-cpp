@@ -4,6 +4,3 @@ build/
 CMakeSettings.json.user
 *.bundle
 scripts/__pycache__/
-# Source audio working directory (toolchain input, not game assets)
-audio/tracks/*.m4a
-audio/tracks/*.wav
