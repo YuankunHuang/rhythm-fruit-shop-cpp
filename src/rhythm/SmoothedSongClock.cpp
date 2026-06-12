@@ -32,6 +32,9 @@ namespace rfs {
 		if (frozen_) {
 			return;
 		}
+		if (armed_ && anchor.sample_cursor == last_seen_cursor_) {
+			return;
+		}
 		if (anchor.sample_rate <= 0 || anchor.sample_cursor == 0) {
 			return;
 		}
