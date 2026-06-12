@@ -1,6 +1,7 @@
 out/
 .vs/
 build/
+dist/
 CMakeSettings.json.user
 *.bundle
 scripts/__pycache__/
