@@ -288,9 +288,10 @@ namespace rfs {
 		}
 
 		song_time_ms_ = ctx.song_time_ms;
-		progress_time_ms_ += ctx.delta_time * 1000.f;
-		progress_time_ms_ = std::max(progress_time_ms_, song_time_ms_);
-		progress_time_ms_ = std::min(progress_time_ms_, chart_end_ms);
+		progress_time_ms_ = std::max(
+			progress_time_ms_,
+			std::clamp(song_time_ms_, 0.f, chart_end_ms)
+		);
 
 		UpdateHitFx(ctx.delta_time);
 

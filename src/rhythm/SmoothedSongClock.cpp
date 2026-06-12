@@ -39,6 +39,8 @@ namespace rfs {
 			return;
 		}
 
+		last_seen_cursor_ = anchor.sample_cursor;
+
 		const float observed_ms = SampleToMs(anchor);
 		sample_rate_ = anchor.sample_rate;
 
@@ -60,11 +62,11 @@ namespace rfs {
 
 		if (abs_delta <= kSoftReanchorMs) {
 			anchor_song_ms_ += delta_ms * kEmaAlpha;
-			anchor_host_ns_ = anchor.host_ns;
+			// anchor_host_ns_ = anchor.host_ns; -> shouldn't update last-recorded anchor time during EMA smoothing, otherwise we're abandoning the EMA immediately
 		}
 		else {
 			anchor_song_ms_ = observed_ms;
-			anchor_host_ns_ = anchor.host_ns;
+			anchor_host_ns_ = anchor.host_ns; // only update anchor host time for hard-snaps
 		}
 	}
 
