@@ -25,6 +25,7 @@ namespace rfs {
 		bool frozen_ = false;
 		float frozen_ms_ = 0.f;
 
+		SampleIndex last_seen_cursor_ = 0;
 		float anchor_song_ms_ = 0.f;
 		HostNanos anchor_host_ns_ = 0;
 		std::int32_t sample_rate_ = 48000;
