@@ -15,7 +15,7 @@ namespace rfs {
 			.song_offset_ms = song_offset_ms,
 			.kind = ReplayEventKind::Tap,
 			});
-		return gameplay_.HandleLaneTap(lane, input_ms);
+		return gameplay_.HandleLaneTap(lane, input_ms, song_offset_ms);
 	}
 
 	MissCommandBuffer RecordingSession::Update(std::int32_t song_time_ms, std::int32_t song_offset_ms) {
@@ -25,6 +25,6 @@ namespace rfs {
 			.song_offset_ms = song_offset_ms,
 			.kind = ReplayEventKind::Update,
 			});
-		return gameplay_.Update(song_time_ms);
+		return gameplay_.Update(song_time_ms, song_offset_ms);
 	}
 }
