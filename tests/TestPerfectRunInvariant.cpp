@@ -47,7 +47,7 @@ TEST_CASE("PerfectRunInvariant") {
 
 	int resolved = 0;
 	for (const auto& note : session.Chart().Notes()) {
-		const std::int32_t input_ms = note.time_ms + session.Config().song_offset_ms;
+		const std::int32_t input_ms = note.time_ms;
 		auto taps = session.HandleLaneTap(note.lane, input_ms);
 		REQUIRE(taps.has_value());
 		CHECK(taps->count == 1); // exactly one note resolved per perfect tap

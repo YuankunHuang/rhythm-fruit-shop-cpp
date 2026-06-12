@@ -13,9 +13,8 @@
 namespace rfs {
 
 	namespace {
-		GameplaySessionConfig MakeSessionConfig(const PlaySessionConfig& session) {
+		GameplaySessionConfig MakeSessionConfig() {
 			return GameplaySessionConfig{
-				.song_offset_ms = session.song_offset_ms,
 				.song_end_delay_ms = static_cast<std::int32_t>(GameConfig::kSongEndDelayMs),
 			};
 		}
@@ -33,7 +32,7 @@ namespace rfs {
 	GameplayScreen::GameplayScreen(const GameContext& ctx, FrozenChart chart, std::string cover_path)
 		: ctx_(ctx)
 		, cover_path_(std::move(cover_path))
-		, session_(std::move(chart), MakeSessionConfig(ctx_.session), record_)
+		, session_(std::move(chart), MakeSessionConfig(), record_)
 	{
 	}
 
@@ -255,7 +254,7 @@ namespace rfs {
 
 	void GameplayScreen::Update(const FrameContext& ctx) {
 		layout_ = GameLayout::Compute(ctx.win_w, ctx.win_h, LaneCount());
-		ctx_.session.last_frame_duration_ms = ctx.delta_time * 1000.f;
+		ctx_.debug_state.last_frame_duration_ms = ctx.delta_time * 1000.f;
 		ui_ = GameConfig::UiLayout::Compute(ctx.win_w, ctx.win_h);
 
 		if (retry_cooldown_ > 0.f) {
@@ -308,7 +307,7 @@ namespace rfs {
 		}
 
 		const std::int32_t judge_time_ms = static_cast<std::int32_t>(std::lround(song_time_ms_));
-		const auto misses = session_.Update(judge_time_ms);
+		const auto misses = session_.Update(judge_time_ms, ctx_.settings.song_offset_ms);
 		for (const auto& cmd : misses.Span()) {
 			ApplyPresentation(cmd);
 		}
@@ -366,12 +365,12 @@ namespace rfs {
 
 		RenderJudgeLine();
 
-		float approach = static_cast<float>(GameConfig::kSpeedLevels[ctx_.session.speed_idx]);
+		float approach = static_cast<float>(GameConfig::kSpeedLevels[ctx_.settings.speed_idx]);
 		const auto& notes = session_.Gameplay().Chart().Notes();
 		for (auto i = session_.Gameplay().Store().NextIdx(); i < notes.size(); ++i) {
 			if (session_.Gameplay().Store().NoteResolved()[i]) continue;
 			const auto& note = notes[i];
-			float t = static_cast<float>(note.time_ms + ctx_.session.song_offset_ms) - song_time_ms_;
+			float t = static_cast<float>(note.time_ms + ctx_.settings.song_offset_ms) - song_time_ms_;
 			float norm = t / approach;
 			if (norm < -0.15f || norm > 1.1f) continue;
 
@@ -445,9 +444,9 @@ namespace rfs {
 			"SCORE " + std::to_string(session_.Gameplay().Score().Score()),
 			GameColors::kTextWhite, GameColors::kOutlineBlack });
 
-		if (ctx_.session.show_debug_overlay) {
+		if (ctx_.settings.show_debug_overlay) {
 			RenderDebugOverlay(
-				ctx_.renderer, ui_, ctx_.session,
+				ctx_.renderer, ui_, ctx_.settings, ctx_.debug_state,
 				session_.Gameplay().Store().NextIdx(), song_time_ms_,
 				static_cast<int>(session_.Gameplay().Chart().Notes().size()));
 		}
@@ -457,7 +456,7 @@ namespace rfs {
 		if (!evt.pressed) return;
 
 		if (evt.action == InputAction::ToggleDebug && evt.pressed) {
-			ctx_.session.show_debug_overlay = !ctx_.session.show_debug_overlay;
+			ctx_.settings.show_debug_overlay = !ctx_.settings.show_debug_overlay;
 			return;
 		}
 
@@ -481,10 +480,10 @@ namespace rfs {
 			? evt.event_song_time_ms
 			: static_cast<std::int32_t>(song_time_ms_);
 
-		if (auto taps = session_.HandleLaneTap(lane, input_ms)) {
+		if (auto taps = session_.HandleLaneTap(lane, input_ms, ctx_.settings.song_offset_ms)) {
 			for (const auto& cmd : taps->Span()) {
-				ctx_.session.last_judge_delta_ms = input_ms
-					- (session_.Gameplay().Chart().Notes()[cmd.note_index].time_ms + session_.Gameplay().Config().song_offset_ms);
+				ctx_.debug_state.last_judge_delta_ms = input_ms
+					- (session_.Gameplay().Chart().Notes()[cmd.note_index].time_ms + ctx_.settings.song_offset_ms);
 				ApplyPresentation(cmd);
 			}
 		}

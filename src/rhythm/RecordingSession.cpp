@@ -8,19 +8,21 @@ namespace rfs {
 		record_.config = config;
 	}
 
-	std::optional<TapCommandBuffer> RecordingSession::HandleLaneTap(int lane, std::int32_t input_ms) {
+	std::optional<TapCommandBuffer> RecordingSession::HandleLaneTap(int lane, std::int32_t input_ms, std::int32_t song_offset_ms) {
 		record_.events.push_back(ReplayEvent{
 			.lane = lane,
 			.input_ms = input_ms,
+			.song_offset_ms = song_offset_ms,
 			.kind = ReplayEventKind::Tap,
 			});
 		return gameplay_.HandleLaneTap(lane, input_ms);
 	}
 
-	MissCommandBuffer RecordingSession::Update(std::int32_t song_time_ms) {
+	MissCommandBuffer RecordingSession::Update(std::int32_t song_time_ms, std::int32_t song_offset_ms) {
 		record_.events.push_back(ReplayEvent{
 			.lane = -1,
 			.input_ms = song_time_ms,
+			.song_offset_ms = song_offset_ms,
 			.kind = ReplayEventKind::Update,
 			});
 		return gameplay_.Update(song_time_ms);

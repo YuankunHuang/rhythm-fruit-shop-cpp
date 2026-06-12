@@ -24,7 +24,7 @@ TEST_CASE("Positive: Record and replay a gameplay session") {
 	ReplayRecord record{};
 	GameResult live{};
 	{
-		RecordingSession session(chart, GameplaySessionConfig{ .song_offset_ms = -50 }, record);
+		RecordingSession session(chart, GameplaySessionConfig{}, record);
 		session.HandleLaneTap(0, 950);   // Early tap for first note (Perfect)
 		session.HandleLaneTap(1, 1550);  // Late tap for second note (Great)
 		session.HandleLaneTap(2, 2100);  // Late tap for third note (Good)
@@ -43,15 +43,17 @@ TEST_CASE("Negative: Replay outcome depends on record.config (identity)") {
 	FrozenChart chart = LoadEasyFixture();
 	ReplayRecord record{};
 	{
-		RecordingSession session(chart, GameplaySessionConfig{ .song_offset_ms = -50 }, record);
-		session.HandleLaneTap(0, 950);
-		session.HandleLaneTap(1, 2030);
-		session.HandleLaneTap(2, 3080);
+		RecordingSession session(chart, GameplaySessionConfig{}, record);
+		session.HandleLaneTap(0, 950, -50);
+		session.HandleLaneTap(1, 2030, -50);
+		session.HandleLaneTap(2, 3080, -50);
 		session.Update(4200);
 	}
 	const GameResult faithful = ReplayHeadless(chart, record);
 	ReplayRecord tampered = record;
-	tampered.config.song_offset_ms -= 100000; // negative! This should cause all taps to miss. Otherwise, notes remain unresolved, a bit confusing for assertions.
+	for (auto& evt : tampered.events) {
+		evt.song_offset_ms -= 100000; // negative! This should cause all taps to miss. Otherwise, notes remain unresolved, a bit confusing for assertions.
+	}
 	const GameResult diverged = ReplayHeadless(chart, tampered);
 	CHECK(diverged != faithful);
 	CHECK(diverged.perfect == 0);

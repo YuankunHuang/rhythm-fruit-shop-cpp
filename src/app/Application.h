@@ -13,7 +13,7 @@ namespace rfs {
 	public:
 		Application(IWindow& window, IInputSource& input, IRenderer& renderer,
 			IAudioBackendClock& backend_clock, SmoothedSongClock& song_clock,
-			IAudioPlayer& audio, IAudioPlayer& bgm, PlaySessionConfig& session);
+			IAudioPlayer& audio, IAudioPlayer& bgm, PlayerSettings& settings, GameplayDebugState& debug_state);
 		bool Run();
 	private:
 		IWindow& window_;
@@ -23,6 +23,7 @@ namespace rfs {
 		SmoothedSongClock& song_clock_;
 		IAudioPlayer& audio_;
 		IAudioPlayer& bgm_;
-		PlaySessionConfig& session_;
+		PlayerSettings& settings_;
+		GameplayDebugState& debug_state_;
 	};
 }
