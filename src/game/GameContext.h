@@ -15,6 +15,7 @@ namespace rfs {
 		IAudioPlayer& bgm;
 		UIManager& ui;
 		SmoothedSongClock& song_clock;
-		PlaySessionConfig& session;
+		PlayerSettings& settings;
+		GameplayDebugState& debug_state;
 	};
 }

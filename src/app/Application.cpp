@@ -19,15 +19,15 @@ namespace rfs {
 	Application::Application(
 		IWindow& window, IInputSource& input, IRenderer& renderer,
 		IAudioBackendClock& backend_clock, SmoothedSongClock& song_clock,
-		IAudioPlayer& audio, IAudioPlayer& bgm, PlaySessionConfig& session) :
+		IAudioPlayer& audio, IAudioPlayer& bgm, PlayerSettings& settings, GameplayDebugState& debug_state) :
 		window_(window), input_(input), renderer_(renderer),
-		backend_clock_(backend_clock), song_clock_(song_clock), audio_(audio), bgm_(bgm), session_(session) {
+		backend_clock_(backend_clock), song_clock_(song_clock), audio_(audio), bgm_(bgm), settings_(settings), debug_state_(debug_state) {
 	}
 
 	bool Application::Run() {
 		UIManager ui{};
 
-		GameContext ctx{ window_, renderer_, audio_, bgm_, ui, song_clock_, session_ };
+		GameContext ctx{ window_, renderer_, audio_, bgm_, ui, song_clock_, settings_, debug_state_ };
 		ui.NavigateTo(std::make_unique<MainMenuScreen>(ctx));
 
 		auto last_time = std::chrono::steady_clock::now();

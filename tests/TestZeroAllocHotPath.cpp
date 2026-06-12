@@ -35,7 +35,7 @@ TEST_CASE("hot path performs zero heap allocations during steady-state play") {
 	// a preheat: to trigger any lazy initialization in runtime / std, so that subsequent calls are more likely to be steady-state.
 	{
 		const auto& n0 = notes[0];
-		const std::int32_t t0 = n0.time_ms + session.Config().song_offset_ms;
+		const std::int32_t t0 = n0.time_ms;
 		session.HandleLaneTap(n0.lane, t0);
 		session.Update(t0);
 	}
@@ -46,7 +46,7 @@ TEST_CASE("hot path performs zero heap allocations during steady-state play") {
 		rfs::test::ScopedAllocGuard guard(false);
 		for (std::size_t i = 1; i < notes.size(); ++i) {
 			const auto& n = notes[i];
-			const std::int32_t t = n.time_ms + session.Config().song_offset_ms;
+			const std::int32_t t = n.time_ms;
 			session.HandleLaneTap(n.lane, t);
 			session.Update(t);
 		}

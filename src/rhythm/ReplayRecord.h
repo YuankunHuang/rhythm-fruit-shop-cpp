@@ -12,11 +12,12 @@ namespace rfs {
 	struct ReplayEvent {
 		int lane;
 		std::int32_t input_ms;
+		std::int32_t song_offset_ms; // offset can be adjusted during gameplay, so it must be recored per event
 		ReplayEventKind kind;
 	};
 
 	struct ReplayRecord {
-		std::vector<ReplayEvent> events;
 		GameplaySessionConfig config;
+		std::vector<ReplayEvent> events;
 	};
 }

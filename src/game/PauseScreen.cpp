@@ -225,8 +225,8 @@ namespace rfs {
 			y_shift = content_bottom - bottom_limit;
 		}
 
-		RenderTimingPanel(ctx_.renderer, ui, ctx_.session.song_offset_ms, cx, timing_top - y_shift, panel_h);
-		RenderSpeedPanel(ctx_.renderer, ui, ctx_.session.speed_idx, cx, speed_top - y_shift, panel_h);
+		RenderTimingPanel(ctx_.renderer, ui, ctx_.settings.song_offset_ms, cx, timing_top - y_shift, panel_h);
+		RenderSpeedPanel(ctx_.renderer, ui, ctx_.settings.speed_idx, cx, speed_top - y_shift, panel_h);
 
 		const float key_gap = ui.Px(8.f);
 
@@ -249,7 +249,7 @@ namespace rfs {
 		if (!evt.pressed) return;
 
 		if (evt.action == InputAction::ToggleDebug && evt.pressed) {
-			ctx_.session.show_debug_overlay = !ctx_.session.show_debug_overlay;
+			ctx_.settings.show_debug_overlay = !ctx_.settings.show_debug_overlay;
 			return;
 		}
 
@@ -275,7 +275,7 @@ namespace rfs {
 		case InputAction::NavRight: {
 			const auto& kSteps = GameConfig::kCalibrationSteps;
 			const std::size_t n = std::size(kSteps);
-			std::size_t i = FindCalibrationIndex(ctx_.session.song_offset_ms);
+			std::size_t i = FindCalibrationIndex(ctx_.settings.song_offset_ms);
 			i = std::min(i, n - 1);
 
 			if (evt.action == InputAction::NavLeft) {
@@ -284,20 +284,20 @@ namespace rfs {
 			else {
 				if (i + 1 < n) ++i;
 			}
-			ctx_.session.song_offset_ms = kSteps[i];
+			ctx_.settings.song_offset_ms = kSteps[i];
 			break;
 		}
 		case InputAction::Level1:
-			ctx_.session.speed_idx = 0;
+			ctx_.settings.speed_idx = 0;
 			break;
 		case InputAction::Level2:
-			ctx_.session.speed_idx = 1;
+			ctx_.settings.speed_idx = 1;
 			break;
 		case InputAction::Level3:
-			ctx_.session.speed_idx = 2;
+			ctx_.settings.speed_idx = 2;
 			break;
 		case InputAction::Level4:
-			ctx_.session.speed_idx = 3;
+			ctx_.settings.speed_idx = 3;
 			break;
 		default:
 			break;

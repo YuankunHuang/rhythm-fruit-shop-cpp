@@ -6,10 +6,10 @@ namespace rfs {
 		for (const auto& evt : record.events) {
 			switch (evt.kind) {
 			case ReplayEventKind::Tap:
-				session.HandleLaneTap(evt.lane, evt.input_ms);
+				session.HandleLaneTap(evt.lane, evt.input_ms, evt.song_offset_ms);
 				break;
 			case ReplayEventKind::Update:
-				session.Update(evt.input_ms);
+				session.Update(evt.input_ms, evt.song_offset_ms);
 				break;
 			}
 		}

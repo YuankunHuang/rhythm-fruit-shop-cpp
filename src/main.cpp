@@ -18,8 +18,9 @@ int main() {
 
 	rfs::MiniaudioAudioBackendClock backend_clock{player};
 	rfs::SmoothedSongClock song_clock{};
-	rfs::PlaySessionConfig session{};
-	rfs::Application app(window, input, renderer, backend_clock, song_clock, player, bgm_player, session);
+	rfs::PlayerSettings settings{};
+	rfs::GameplayDebugState debug_state{};
+	rfs::Application app(window, input, renderer, backend_clock, song_clock, player, bgm_player, settings, debug_state);
 
 	return app.Run() ? 0 : 1;
 }

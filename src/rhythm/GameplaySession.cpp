@@ -18,10 +18,10 @@ namespace rfs {
 		score_.Apply(cmd);
 	}
 
-	std::optional<TapCommandBuffer> GameplaySession::HandleLaneTap(int lane, std::int32_t input_ms) {
+	std::optional<TapCommandBuffer> GameplaySession::HandleLaneTap(int lane, std::int32_t input_ms, std::int32_t song_offset_ms) {
 		const auto taps = judge_.JudgeTaps(
 			chart_, store_.NoteResolved(), store_.NextIdx(),
-			lane, input_ms, config_.song_offset_ms);
+			lane, input_ms, song_offset_ms);
 		if (taps.count == 0) {
 			return std::nullopt;
 		}
@@ -31,15 +31,15 @@ namespace rfs {
 		return taps;
 	}
 
-	MissCommandBuffer GameplaySession::Update(std::int32_t song_time_ms) {
+	MissCommandBuffer GameplaySession::Update(std::int32_t song_time_ms, std::int32_t song_offset_ms) {
 		const auto misses = judge_.DetectMisses(
 			chart_, store_.NoteResolved(), store_.NextIdx(),
-			song_time_ms, config_.song_offset_ms);
+			song_time_ms, song_offset_ms);
 		for (const auto& cmd : misses.Span()) {
 			CommitCommand(cmd);
 		}
 		store_.AdvancePastMissWindow(
-			chart_, song_time_ms, config_.song_offset_ms, config_.judgement.good_window_ms);
+			chart_, song_time_ms, song_offset_ms, config_.judgement.good_window_ms);
 		return misses;
 	}
 

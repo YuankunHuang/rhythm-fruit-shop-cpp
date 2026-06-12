@@ -285,7 +285,7 @@ namespace rfs {
 			const float pill_h = ui.font_body * 1.25f;
 
 			for (int i = 0; i < speed_count; ++i) {
-				const bool is_active = (i == ctx_.session.speed_idx);
+				const bool is_active = (i == ctx_.settings.speed_idx);
 				const float tab_cx = tab_x + tab_w * 0.5f;
 				const float pill_x = tab_cx - pill_w * 0.5f;
 				const float pill_y = speed_y - pill_h * 0.5f;
@@ -395,19 +395,19 @@ namespace rfs {
 			break;
 
 		case InputAction::Level1:
-			ctx_.session.speed_idx = 0;
+			ctx_.settings.speed_idx = 0;
 			break;
 
 		case InputAction::Level2:
-			ctx_.session.speed_idx = 1;
+			ctx_.settings.speed_idx = 1;
 			break;
 
 		case InputAction::Level3:
-			ctx_.session.speed_idx = 2;
+			ctx_.settings.speed_idx = 2;
 			break;
 
 		case InputAction::Level4:
-			ctx_.session.speed_idx = 3;
+			ctx_.settings.speed_idx = 3;
 			break;
 
 		default:

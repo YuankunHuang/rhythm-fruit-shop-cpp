@@ -11,7 +11,6 @@
 
 namespace rfs {
 	struct GameplaySessionConfig {
-		std::int32_t song_offset_ms = 0;
 		std::int32_t song_end_delay_ms = 2000;
 		JudgementConfig judgement{};
 	};
@@ -20,8 +19,8 @@ namespace rfs {
 	public:
 		explicit GameplaySession(FrozenChart chart, GameplaySessionConfig config = {});
 
-		std::optional<TapCommandBuffer> HandleLaneTap(int lane, std::int32_t input_ms);
-		MissCommandBuffer Update(std::int32_t song_time_ms);
+		std::optional<TapCommandBuffer> HandleLaneTap(int lane, std::int32_t input_ms, std::int32_t song_offset_ms = 0);
+		MissCommandBuffer Update(std::int32_t song_time_ms, std::int32_t song_offset_ms = 0);
 		bool IsFinished(std::int32_t song_time_ms) const noexcept;
 		GameResult Summary() const noexcept;
 
