@@ -99,9 +99,15 @@ def stage_assets(assets_source: Path, out_assets: Path) -> None:
         )
         return
 
+    # Fallback if share script is missing: copy runtime dirs only (not showcase/).
+    runtime_dirs = ("audio", "charts", "covers", "fonts")
     if out_assets.exists():
         shutil.rmtree(out_assets)
-    shutil.copytree(assets_source, out_assets)
+    out_assets.mkdir(parents=True)
+    for name in runtime_dirs:
+        src = assets_source / name
+        if src.is_dir():
+            shutil.copytree(src, out_assets / name)
 
 
 def create_zip(out_dir: Path, zip_path: Path) -> None:

@@ -6,7 +6,31 @@ Four-lane falling notes. Visuals stay intentionally minimal while the clock pipe
 
 Web prototype (visuals, zh-CN narrative, shop loop) → [YuankunHuang/rhythm-fruit-shop](https://github.com/YuankunHuang/rhythm-fruit-shop)
 
+This is my first native C++ project: a compact, playable slice built to demonstrate timing architecture, dependency inversion, deterministic headless tests, and a measured path toward stricter performance contracts.
+
+## Demo
+
+[![Rhythm Fruit Shop C++ gameplay demo](assets/showcase/rhythm-fruit-shop-cpp-demo.gif)](assets/showcase/rhythm-fruit-shop-cpp-demo-60s.mp4)
+
+The GIF is a quick README preview. The 60-second MP4 is the review/demo cut for peers, recruiters, and the portfolio site; it covers launch, song select, async loading, gameplay, pause/resume, timing-offset UI, result, and return to song select. For a playable build, use the Windows release artifact or stage `dist/RhythmFruitShop-win64/` locally.
+
 ---
+
+## Current Status
+
+Shipped today:
+
+- End-to-end playable Windows demo: main menu → song select → async loading → gameplay → result.
+- Showcase media under `assets/showcase/`: README GIF preview plus a 60-second MP4 demo cut.
+- Catalog-driven content: 17 visible songs, 29 visible playable difficulty entries, plus a hidden `test-fixture` chart for tests.
+- Release package staged at `dist/RhythmFruitShop-win64/` with `RhythmFruitShop.exe`, runtime DLLs, `PLAY.txt`, and staged assets.
+- 30 headless doctest cases covering chart/catalog loading, audio path resolution, song clock freeze, judgment windows, scoring, `GameplaySession`, perfect-run determinism, zero-allocation hot-path guard, in-memory record/replay, and `FixedSlotPool`.
+- CI workflow builds and runs the headless test target on Windows; the Windows x64 release workflow is manually triggered.
+- Manual QA demo pass covers launch, song select, loading, gameplay, pause/resume, timing offset UI, result, and return to song select.
+
+Still planned / not claimed as shipped:
+
+- Production `RFS_HOTPATH_BEGIN/END`, `FramePmrArena`, frame p50/p99 metrics, input-to-judge latency histogram, formal `ChartValidator`, and pause invariant test.
 
 ## Quick Start
 
@@ -27,6 +51,8 @@ If `VCPKG_ROOT` is not set globally, Visual Studio usually picks up the vcpkg bu
 set VCPKG_ROOT=C:\Program Files\Microsoft Visual Studio\18\Community\VC\vcpkg
 ```
 
+Runtime assets are checked in under `assets/` for the current demo build: charts, audio, covers, and `assets/fonts/Inter-Regular.TTF`. The helper batch files remain available for rebuilding imported charts/audio from source material.
+
 If SFML DLLs are missing at runtime during local Debug builds, copy the debug binaries from:
 
 `out/build/win64-vcpkg/Debug/vcpkg_installed/x64-windows/debug/bin/`
@@ -39,8 +65,10 @@ into the same folder as `RhythmFruitShop.exe` (or use the Release packaging flow
 |-----|-------------|---------------|----------------|
 | **D F J K** | Lanes 0–3 | — | — |
 | **Up / Down** | — | — | Change song |
-| **Left / Right** | — | — | Change difficulty |
-| **Enter** | Start (main menu) / confirm (loading, result) | Return to main menu | Start selected song |
+| **Left / Right** | — | Adjust timing offset | Change difficulty |
+| **1 / 2 / 3 / 4** | — | Set speed level | Set speed level |
+| **F1** | Toggle debug overlay | Toggle debug overlay | — |
+| **Enter** | Start (main menu) / confirm (loading, result) | Quit to main menu | Start selected song |
 | **Esc** | Open pause overlay | Resume | Back |
 
 Default window size: **1280×720**.
@@ -48,12 +76,14 @@ Default window size: **1280×720**.
 ## Demo Flow
 
 ```
-MainMenu → ChartSelect → Loading (async chart load) → Gameplay → Result → MainMenu
+MainMenu → ChartSelect → Loading (async chart load) → Gameplay → Result → ChartSelect
                               ↑
                          Pause overlay (Esc)
 ```
 
-Song list and audio paths come from `assets/charts/catalog.json`. Chart authoring and the osu!mania import pipeline live in the companion repo ([YuankunHuang/rhythm-fruit-shop](https://github.com/YuankunHuang/rhythm-fruit-shop)); this repo ships ready-to-play charts under `assets/charts/`.
+Song list and audio paths come from `assets/charts/catalog.json`. Chart authoring and the osu!mania import pipeline live in the companion repo ([YuankunHuang/rhythm-fruit-shop](https://github.com/YuankunHuang/rhythm-fruit-shop)); this repo ships the current demo chart/audio/font/cover asset set under `assets/`.
+
+Current catalog summary: 18 total entries, 17 visible songs, 29 visible playable difficulty entries, and one hidden `test-fixture` entry used by tests.
 
 Example playable entries:
 
@@ -111,7 +141,7 @@ Input events carry a per-key host-monotonic timestamp at poll time; judgment com
 | `rfs_demo` | Runnable game executable (only built when `RFS_BUILD_APP=ON`) |
 | `rfs_tests` | Headless core tests — determinism (perfect-run invariant), zero-alloc hot-path contract, `FixedSlotPool`, no window/audio device |
 
-Run tests from the repository root:
+Run tests from the repository root after configuring/building:
 
 ```bat
 out\build\win64-vcpkg\Debug\rfs_tests.exe
@@ -134,7 +164,13 @@ ctest --preset ci-headless-test
 
 ## Release Packaging (Windows x64)
 
-Build the `win64-vcpkg` Release configuration, then stage from the repository root:
+One-command local package flow:
+
+```bat
+04_package_release.bat
+```
+
+Or build the `win64-vcpkg` Release configuration, then stage from the repository root:
 
 ```bat
 python scripts\package_cpp_core_release.py
@@ -143,22 +179,24 @@ python scripts\package_cpp_core_release.py
 This script:
 
 1. Copies `RhythmFruitShop.exe` and the vcpkg runtime DLLs
-2. Stages optimized assets via `scripts\package_cpp_core_share.py` (cover JPEG resize, mp3 re-encode, chart JSON minify)
+2. Stages optimized runtime assets via `scripts\package_cpp_core_share.py` (audio, charts, covers, fonts — cover JPEG resize, mp3 re-encode, chart JSON minify). `assets/showcase/` review media is excluded.
 3. Produces `dist\RhythmFruitShop-win64\` (exe, DLLs, assets, `PLAY.txt`) and `dist\RhythmFruitShop-win64.zip`
 
 Requirements: Visual Studio with C++ workload, Python 3 (+ Pillow for asset optimization). Optional: `ffmpeg` on PATH for mp3 re-encode during asset staging.
+
+The staged package contains `RhythmFruitShop.exe`, vcpkg runtime DLLs, `PLAY.txt`, and `assets/` next to the executable.
 
 ### CI
 
 Two GitHub Actions workflows:
 
-- **CI** (`.github/workflows/ci.yml`) — runs on every push to `main` and on pull requests. It configures the headless `ci-headless` preset (no SFML), builds `rfs_tests`, and runs the full test suite via `ctest`. The `headless-tests` job is a **required status check** on `main` (branch ruleset), so changes must pass it before merging.
+- **CI** (`.github/workflows/ci.yml`) — runs on every push to `main` and on pull requests. It configures the headless `ci-headless` preset (no SFML), builds `rfs_tests`, and runs the full test suite via `ctest`.
 - **C++ Release (Windows x64)** (`.github/workflows/release-windows.yml`) — triggered manually via **workflow_dispatch**. Builds the full app with the `win64-vcpkg` preset and uploads `RhythmFruitShop-win64.zip` as an artifact.
 
 ## Project Layout
 
 ```
-  assets/          charts, audio, fonts
+  assets/          charts, audio, covers, fonts
   cmake/           warnings, dependency guards
   external/        miniaudio (single-header)
   scripts/         release packaging (package_cpp_core_release.py + share.py)
@@ -167,7 +205,8 @@ Two GitHub Actions workflows:
     game/          screens, layout, rules
     platform/      interfaces + SFML / miniaudio backends
     rhythm/        ChartLoader, SmoothedSongClock, FrozenChart, AudioPathResolver,
-                   JudgementSystem, ScoreSystem, RuntimeStore, GameplaySession
+                   JudgementSystem, ScoreSystem, RuntimeStore, GameplaySession,
+                   RecordingSession, ReplayHeadless
     util/          FixedSlotPool (header-only, heap-free object pool)
   tests/           doctest suites + support/AllocationGuard (zero-alloc instrument)
   vcpkg.json       nlohmann-json + doctest; SFML 2.6.1 (pinned) as the default "app" feature
@@ -182,3 +221,5 @@ Two GitHub Actions workflows:
 ## License
 
 Personal project — Yuankun Huang, 2026.
+
+Source code and project documentation are published for portfolio review under `LICENSE`. Audio tracks, cover art, fonts, showcase media, and imported chart/source material are covered separately in `THIRD_PARTY_NOTICES.md`; they are included for demonstration and review of this project only and are not relicensed as original project-owned media.

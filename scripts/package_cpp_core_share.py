@@ -25,6 +25,10 @@ except ImportError:
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT / "assets"
 
+# Runtime-only top-level dirs. Repo also keeps assets/showcase/ for README /
+# portfolio review media (GIF/MP4); that must not ship in playable builds.
+RUNTIME_ASSET_DIRS = frozenset({"audio", "charts", "covers", "fonts"})
+
 AUDIO_SUFFIXES = {".mp3", ".ogg", ".wav", ".flac", ".m4a"}
 
 # Full-screen cover backgrounds use DrawCoverFill (scale-to-cover). Target at least 1080p
@@ -154,12 +158,23 @@ def patch_catalog_cover_paths(catalog_path: Path, cover_map: dict[str, str]) -> 
     print(f"  patched catalog cover paths: {changed}")
 
 
-def copy_tree_plain(source: Path, target: Path) -> int:
-    count = 0
+def is_runtime_asset(rel_path: Path) -> bool:
+    """True for files under the runtime asset roots (not showcase/docs media)."""
+    return bool(rel_path.parts) and rel_path.parts[0] in RUNTIME_ASSET_DIRS
+
+
+def iter_runtime_files(source: Path):
     for path in sorted(source.rglob("*")):
         if not path.is_file():
             continue
         rel_path = path.relative_to(source)
+        if is_runtime_asset(rel_path):
+            yield path, rel_path
+
+
+def copy_tree_plain(source: Path, target: Path) -> int:
+    count = 0
+    for path, rel_path in iter_runtime_files(source):
         copy_file(path, target / rel_path)
         count += 1
     return count
@@ -178,6 +193,12 @@ def stage_assets(
         shutil.rmtree(target)
     target.mkdir(parents=True)
 
+    skipped_roots = sorted(
+        {p.name for p in source.iterdir() if p.is_dir() and p.name not in RUNTIME_ASSET_DIRS}
+    )
+    if skipped_roots:
+        print(f"Skipping non-runtime asset dirs: {', '.join(skipped_roots)}")
+
     if not optimize:
         count = copy_tree_plain(source, target)
         total_mb = sum(f.stat().st_size for f in target.rglob("*") if f.is_file()) / 1024 / 1024
@@ -190,10 +211,7 @@ def stage_assets(
     chart_jobs: list[tuple[Path, Path]] = []
     copied = 0
 
-    for path in sorted(source.rglob("*")):
-        if not path.is_file():
-            continue
-        rel_path = path.relative_to(source)
+    for path, rel_path in iter_runtime_files(source):
         dst = target / rel_path
         suffix = path.suffix.lower()
 
