@@ -180,7 +180,7 @@ This script:
 
 1. Copies `RhythmFruitShop.exe` and the vcpkg runtime DLLs
 2. Stages optimized runtime assets via `scripts\package_cpp_core_share.py` (audio, charts, covers, fonts — cover JPEG resize, mp3 re-encode, chart JSON minify). `assets/showcase/` review media is excluded.
-3. Produces `dist\RhythmFruitShop-win64\` (exe, DLLs, assets, `PLAY.txt`) and `dist\RhythmFruitShop-win64.zip`
+3. Produces `dist\RhythmFruitShop-win64\` (exe, DLLs, assets, `PLAY.txt`) and `dist\RhythmFruitShop-win64.zip` (zip root is the `RhythmFruitShop-win64/` folder so extract stays tidy)
 
 Requirements: Visual Studio with C++ workload, Python 3 (+ Pillow for asset optimization). Optional: `ffmpeg` on PATH for mp3 re-encode during asset staging.
 
