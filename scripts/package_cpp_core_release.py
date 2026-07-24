@@ -111,13 +111,16 @@ def stage_assets(assets_source: Path, out_assets: Path) -> None:
 
 
 def create_zip(out_dir: Path, zip_path: Path) -> None:
+    """Zip the staged folder with a single top-level directory (out_dir.name)."""
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     if zip_path.exists():
         zip_path.unlink()
+    root_name = out_dir.name
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(out_dir.rglob("*")):
             if path.is_file():
-                zf.write(path, path.relative_to(out_dir).as_posix())
+                arcname = f"{root_name}/{path.relative_to(out_dir).as_posix()}"
+                zf.write(path, arcname)
 
 
 def main() -> int:
